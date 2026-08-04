@@ -34,8 +34,14 @@ export function HomeSkeleton() {
   return (
     <div>
       <div className="flex flex-wrap gap-2">
-        {['w-16', 'w-20', 'w-24', 'w-20'].map((w) => (
-          <Skeleton key={w} className={`h-11 rounded-full ${w}`} />
+        {/*
+          key로 너비 클래스를 쓰면 안 된다 — 'w-20'이 두 번 나와서 형제끼리
+          key가 겹친다. 이 목록은 순서가 바뀌지도 늘거나 줄지도 않는
+          고정 자리표시라 index를 key로 써도 안전하다.
+          (반대로 정렬·필터되는 목록에서 index를 쓰면 잘못된 요소가 재사용된다)
+        */}
+        {['w-16', 'w-20', 'w-24', 'w-20'].map((w, i) => (
+          <Skeleton key={i} className={`h-11 rounded-full ${w}`} />
         ))}
       </div>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
