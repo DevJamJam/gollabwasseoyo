@@ -6,8 +6,8 @@
 사용자가 직접 판단하고, 그 판단의 이유를 남깁니다.
 앱이 하는 일은 **판단 재료를 정리해 보여주고 결과를 잊지 않게 하는 것**까지입니다.
 
-<!-- 배포: (Vercel 연동 후 추가) -->
-GitHub: https://github.com/DevJamJam/gollabwasseoyo
+**배포** https://gollabwasseoyo.vercel.app
+**GitHub** https://github.com/DevJamJam/gollabwasseoyo
 
 `Next.js 16 (App Router)` · `TypeScript` · `Tailwind CSS v4` · `Vitest` · `localStorage`
 
