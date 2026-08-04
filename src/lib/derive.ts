@@ -5,7 +5,15 @@
  * 이 프로젝트의 단위 테스트는 대부분 이 파일을 겨눈다.
  */
 
-import type { Amount, Decision, DecisionStatus, PurchasedItem } from './types';
+import type {
+  Amount,
+  Candidate,
+  CategoryId,
+  Decision,
+  DecisionStatus,
+  Filters,
+  PurchasedItem,
+} from './types';
 
 /* ────────────────────────────────────────────────────────────
    상태 파생 (규칙 S-1 ~ S-4)
@@ -115,5 +123,116 @@ export function getTotalAmount(item: PurchasedItem): Amount | null {
   return {
     value: item.amount.value * item.quantity,
     unit: item.amount.unit,
+  };
+}
+
+/* ────────────────────────────────────────────────────────────
+   태그 파생
+   ──────────────────────────────────────────────────────────── */
+
+/**
+ * 태그 목록을 고민들의 tags 배열에서 뽑아낸다.
+ *
+ * 태그 마스터 데이터를 따로 두지 않는다. 그래서 어떤 태그를 쓰는 마지막
+ * 고민이 삭제되면 그 태그도 목록에서 저절로 사라진다. 정리 코드가 필요 없다.
+ */
+export function getTagsByCategory(
+  list: Decision[],
+  category?: CategoryId,
+): string[] {
+  const target = category
+    ? list.filter((d) => d.category === category)
+    : list;
+
+  return [...new Set(target.flatMap((d) => d.tags))].sort((a, b) =>
+    a.localeCompare(b, 'ko'),
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
+   후보와 구매의 관계
+   ──────────────────────────────────────────────────────────── */
+
+export function isPurchased(d: Decision, candidateId: string): boolean {
+  return d.order?.items.some((it) => it.candidateId === candidateId) ?? false;
+}
+
+export function getUnselectedCandidates(d: Decision): Candidate[] {
+  if (!d.order) return d.candidates;
+
+  const bought = new Set(d.order.items.map((it) => it.candidateId));
+  return d.candidates.filter((c) => !bought.has(c.id));
+}
+
+/** 구매되어 삭제할 수 없는 후보 id. order가 없으면 빈 배열. */
+export function getLockedCandidateIds(decision: Decision): string[] {
+  return decision.order?.items.map((item) => item.candidateId) ?? [];
+}
+
+/**
+ * 후보를 지울 수 있는가.
+ *
+ * 저장된 Decision이 아니라 '지금 화면에 있는 후보 배열'과 '잠긴 id 목록'을 받는다.
+ * 수정 폼이 들고 있는 건 저장된 데이터가 아니라 아직 저장 전인 초안이라서,
+ * Decision을 받으면 폼에서 후보를 하나 추가해도 개수가 그대로로 보인다.
+ * 이렇게 두면 상세 화면·수정 폼·등록 폼이 같은 함수를 쓴다.
+ */
+export function canDeleteCandidate(
+  candidates: Candidate[],
+  lockedCandidateIds: string[],
+  candidateId: string,
+): boolean {
+  const remainsAtLeastOne = candidates.length > 1;
+  const locked = lockedCandidateIds.includes(candidateId);
+
+  return remainsAtLeastOne && !locked;
+}
+
+/* ────────────────────────────────────────────────────────────
+   목록 필터와 정렬
+   ──────────────────────────────────────────────────────────── */
+
+/** 모든 필터는 AND로 결합한다. */
+export function filterDecisions(list: Decision[], f: Filters): Decision[] {
+  const q = f.q?.trim().toLowerCase() ?? '';
+
+  return list.filter((d) => {
+    if (f.status && getStatus(d) !== f.status) return false;
+    if (f.category && d.category !== f.category) return false;
+    if (f.tag && !d.tags.includes(f.tag)) return false;
+    if (!q) return true;
+
+    const haystack = [
+      d.title,
+      ...d.tags,
+      ...d.candidates.flatMap((c) => [c.name, c.brand ?? '']),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return haystack.includes(q);
+  });
+}
+
+/**
+ * 최근 수정순. 정렬 UI는 두지 않는다.
+ *
+ * updatedAt은 ISO 8601 UTC 문자열이라 사전순 비교가 곧 시간순이다.
+ * 시간 정렬에 localeCompare를 쓸 이유가 없다.
+ */
+export function sortByUpdated(list: Decision[]): Decision[] {
+  return [...list].sort((a, b) => {
+    if (a.updatedAt === b.updatedAt) return 0;
+    return a.updatedAt < b.updatedAt ? 1 : -1;
+  });
+}
+
+export function countByStatus(
+  list: Decision[],
+): Record<DecisionStatus, number> {
+  return {
+    considering: list.filter((d) => getStatus(d) === 'considering').length,
+    purchased: list.filter((d) => getStatus(d) === 'purchased').length,
+    reviewed: list.filter((d) => getStatus(d) === 'reviewed').length,
   };
 }

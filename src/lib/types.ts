@@ -286,6 +286,33 @@ export const EMPTY_REVIEW_FORM: ReviewFormValues = {
 };
 
 /* ────────────────────────────────────────────────────────────
+   액션 결과
+   ──────────────────────────────────────────────────────────── */
+
+/**
+ * 모든 Provider 액션이 돌려주는 값.
+ *
+ * 판별 유니온이라 ok를 확인하면 나머지 필드가 좁혀진다.
+ * 호출한 쪽은 ok === true일 때만 화면을 옮기거나 모달을 닫는다.
+ * 이 반환값을 무시하는 호출이 하나라도 있으면 '저장 성공 후에만 화면 변경'이
+ * 그 지점에서 무효가 된다.
+ */
+export type ActionResult<T = undefined> =
+  | { ok: true; data: T }
+  | { ok: false; reason: 'not_found' | 'invalid' | 'quota' | 'unavailable' };
+
+/**
+ * commit()의 반환값. 저장 단계에서만 나올 수 있는 실패라
+ * not_found와 invalid가 없다.
+ */
+export type CommitResult =
+  | { ok: true }
+  | { ok: false; reason: 'quota' | 'unavailable' };
+
+/** 사용자에게 보여줄 저장소 상태 안내. */
+export type StorageNoticeKind = 'corrupted' | 'unavailable' | 'quota';
+
+/* ────────────────────────────────────────────────────────────
    필터
    ──────────────────────────────────────────────────────────── */
 

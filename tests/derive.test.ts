@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  canDeleteCandidate,
+  countByStatus,
+  filterDecisions,
+  getLockedCandidateIds,
   getReviewProgress,
   getStatus,
+  getTagsByCategory,
   getTotalAmount,
   getUnitPrice,
+  sortByUpdated,
 } from '@/lib/derive';
 import { formatAmount } from '@/lib/format';
 import type { Decision } from '@/lib/types';
@@ -242,5 +248,173 @@ describe('getTotalAmount / formatAmount', () => {
     expect(formatAmount({ value: 200, unit: 'g' })).toBe('200g');
     expect(formatAmount({ value: 3, unit: 'ea' })).toBe('3개');
     expect(formatAmount(undefined)).toBe('-');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════
+   블록 11 — 태그 파생 (규칙 T-1, T-2, T-5)
+   ══════════════════════════════════════════════════════════ */
+
+describe('getTagsByCategory', () => {
+  const list = [
+    makeDecision({ id: 'd1', category: 'food', tags: ['원두', '고소한맛'] }),
+    makeDecision({ id: 'd2', category: 'food', tags: ['원두', '대용량'] }),
+    makeDecision({ id: 'd3', category: 'digital', tags: ['키보드'] }),
+  ];
+
+  it('카테고리로 좁히고 중복을 없앤다', () => {
+    expect(getTagsByCategory(list, 'food')).toEqual([
+      '고소한맛',
+      '대용량',
+      '원두',
+    ]);
+  });
+
+  it('다른 카테고리의 태그는 섞이지 않는다', () => {
+    expect(getTagsByCategory(list, 'food')).not.toContain('키보드');
+    expect(getTagsByCategory(list, 'digital')).toEqual(['키보드']);
+  });
+
+  it('카테고리를 주지 않으면 전체에서 뽑는다', () => {
+    expect(getTagsByCategory(list)).toHaveLength(4);
+  });
+
+  it('기록이 없으면 빈 배열이다', () => {
+    expect(getTagsByCategory([], 'food')).toEqual([]);
+  });
+
+  /** 태그 마스터가 없으므로 마지막 고민이 사라지면 태그도 저절로 사라진다 */
+  it('그 태그를 쓰는 마지막 고민이 빠지면 목록에서도 사라진다', () => {
+    const without = list.filter((d) => d.id !== 'd3');
+    expect(getTagsByCategory(without)).not.toContain('키보드');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════
+   블록 12 — 목록 필터·정렬·개수
+   ══════════════════════════════════════════════════════════ */
+
+describe('filterDecisions / sortByUpdated / countByStatus', () => {
+  const bought = makeDecision({
+    id: 'd2',
+    category: 'digital',
+    tags: ['키보드'],
+    title: '재택용 키보드',
+    candidates: [makeCandidate({ id: 'c1', name: 'RC930', brand: '레오폴드' })],
+    order: {
+      purchasedAt: '2026-01-10',
+      totalPaid: 219000,
+      reason: '테스트',
+      items: [
+        { candidateId: 'c1', unitPrice: 219000, quantity: 1, review: null },
+      ],
+    },
+    updatedAt: '2026-02-01T00:00:00.000Z',
+  });
+
+  const thinking = makeDecision({
+    id: 'd1',
+    category: 'food',
+    tags: ['원두'],
+    title: '겨울 홈카페 원두',
+    candidates: [makeCandidate({ id: 'c9', name: '올드독', brand: '프릳츠' })],
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  });
+
+  const list = [thinking, bought];
+
+  it('필터가 없으면 전부 통과한다', () => {
+    expect(filterDecisions(list, {})).toHaveLength(2);
+  });
+
+  it('상태·카테고리·태그는 AND로 결합한다', () => {
+    expect(filterDecisions(list, { category: 'food' })).toEqual([thinking]);
+    expect(filterDecisions(list, { status: 'purchased' })).toEqual([bought]);
+
+    // 카테고리는 맞지만 상태가 어긋나면 0건
+    expect(
+      filterDecisions(list, { category: 'food', status: 'purchased' }),
+    ).toHaveLength(0);
+  });
+
+  it('검색은 제목·태그·후보 상품명·브랜드를 훑는다', () => {
+    expect(filterDecisions(list, { q: '홈카페' })).toEqual([thinking]); // 제목
+    expect(filterDecisions(list, { q: '키보드' })).toEqual([bought]); // 태그
+    expect(filterDecisions(list, { q: '올드독' })).toEqual([thinking]); // 상품명
+    expect(filterDecisions(list, { q: '레오폴드' })).toEqual([bought]); // 브랜드
+  });
+
+  it('검색은 대소문자를 가리지 않고 앞뒤 공백을 무시한다', () => {
+    expect(filterDecisions(list, { q: '  rc930  ' })).toEqual([bought]);
+  });
+
+  it('최근 수정순으로 정렬하고 원본 배열을 건드리지 않는다', () => {
+    const sorted = sortByUpdated(list);
+
+    expect(sorted.map((d) => d.id)).toEqual(['d2', 'd1']);
+    expect(list.map((d) => d.id)).toEqual(['d1', 'd2']); // 원본 그대로
+  });
+
+  it('상태별 개수를 센다', () => {
+    expect(countByStatus(list)).toEqual({
+      considering: 1,
+      purchased: 1,
+      reviewed: 0,
+    });
+  });
+});
+
+/* ══════════════════════════════════════════════════════════
+   블록 13 — 후보 삭제 가능 여부 (규칙 E-1)
+   ══════════════════════════════════════════════════════════ */
+
+describe('canDeleteCandidate / getLockedCandidateIds', () => {
+  const purchased = makeDecision({
+    candidates: [makeCandidate({ id: 'c1' })],
+    order: {
+      purchasedAt: '2026-01-10',
+      totalPaid: 1000,
+      reason: '테스트',
+      items: [
+        { candidateId: 'c1', unitPrice: 1000, quantity: 1, review: null },
+      ],
+    },
+  });
+
+  it('주문이 없으면 잠긴 후보도 없다', () => {
+    expect(getLockedCandidateIds(makeDecision())).toEqual([]);
+  });
+
+  it('구매한 후보를 잠긴 목록으로 돌려준다', () => {
+    expect(getLockedCandidateIds(purchased)).toEqual(['c1']);
+  });
+
+  it('후보가 하나뿐이면 지울 수 없다', () => {
+    expect(canDeleteCandidate([makeCandidate({ id: 'c1' })], [], 'c1')).toBe(
+      false,
+    );
+  });
+
+  it('구매한 후보는 여러 개여도 지울 수 없다', () => {
+    const two = [makeCandidate({ id: 'c1' }), makeCandidate({ id: 'c2' })];
+    expect(canDeleteCandidate(two, ['c1'], 'c1')).toBe(false);
+    expect(canDeleteCandidate(two, ['c1'], 'c2')).toBe(true);
+  });
+
+  /**
+   * 이 테스트가 시그니처를 (candidates, lockedIds, id)로 바꾼 이유다.
+   * Decision을 받았다면 초안 배열을 기준으로 판정할 방법이 없다.
+   */
+  it('수정 폼에서 후보를 더하면 초안 배열을 기준으로 다시 판정한다', () => {
+    const locked = getLockedCandidateIds(purchased);
+
+    // 저장된 상태: 후보 1개 + 구매됨 → 두 조건 모두 걸린다
+    expect(canDeleteCandidate(purchased.candidates, locked, 'c1')).toBe(false);
+
+    // 폼에서 후보를 하나 추가한 초안
+    const draft = [...purchased.candidates, makeCandidate({ id: 'c2' })];
+
+    expect(canDeleteCandidate(draft, locked, 'c1')).toBe(false); // 여전히 구매됨
+    expect(canDeleteCandidate(draft, locked, 'c2')).toBe(true); // 새 후보는 가능
   });
 });

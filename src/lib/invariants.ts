@@ -25,6 +25,27 @@ import type {
 /** 위반 사유를 문자열로 돌려준다. null이면 통과. */
 export type Violation = string | null;
 
+/**
+ * 위반 사유를 액션 결과로 바꾸는 유일한 지점.
+ *
+ * 사용자에게는 언제나 '저장할 수 없는 상태입니다' 하나로만 보인다.
+ * 그런데 invalid는 정상 흐름에서는 나오면 안 되는 값이라, 개발 중에 이걸
+ * 만났을 때 어떤 규칙이 걸렸는지 알 방법이 있어야 한다. 그게 없으면
+ * candidate_link_invalid와 tag_duplicated를 구분해 돌려주는 의미가 없다.
+ *
+ * 프로덕션 번들에서는 조건 하나만 남고 아무것도 출력하지 않는다.
+ * 테스트 환경(NODE_ENV === 'test')에서도 조용하다.
+ */
+export function rejectInvalid(
+  violation: Exclude<Violation, null>,
+  where: string,
+): { ok: false; reason: 'invalid' } {
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('[invariant] ' + where + ': ' + violation);
+  }
+  return { ok: false, reason: 'invalid' };
+}
+
 /* ────────────────────────────────────────────────────────────
    공통 숫자 검사
    ──────────────────────────────────────────────────────────── */
