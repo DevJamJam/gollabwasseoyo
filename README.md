@@ -1,34 +1,370 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 골라봤어요
 
-## Getting Started
+**구매 전 고민한 후보와 실제 선택, 사용 후 평가를 연결하는 개인 구매 의사결정 아카이브**
 
-First, run the development server:
+자동 점수나 추천 알고리즘으로 승자를 정하지 않습니다.
+사용자가 직접 판단하고, 그 판단의 이유를 남깁니다.
+앱이 하는 일은 **판단 재료를 정리해 보여주고 결과를 잊지 않게 하는 것**까지입니다.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+<!-- 배포: (Vercel 연동 후 추가) -->
+GitHub: https://github.com/DevJamJam/gollabwasseoyo
+
+`Next.js 16 (App Router)` · `TypeScript` · `Tailwind CSS v4` · `Vitest` · `localStorage`
+
+---
+
+## 진행 상황
+
+7일 토이 프로젝트입니다. **현재 Day 1 / 7 완료.**
+
+| Day | 목표 | 상태 |
+|:---:|---|:---:|
+| 1 | 도메인 타입과 핵심 순수 함수 | ✅ |
+| 2 | 저장 Provider와 홈 (필터·검색) | ⬜ |
+| 3 | 새 고민 등록 (2단계 폼) | ⬜ |
+| 4 | 상세와 수정 | ⬜ |
+| 5 | 구매 등록·취소 | ⬜ |
+| 6 | 상품별 평가와 과거 후보 불러오기 | ⬜ |
+| 7 | 마감 — 배포·README·최종 검증 | ⬜ |
+
+```
+✔ 테스트 30개 (5블록) 통과
+✔ tsc --noEmit / eslint / next build 통과
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> **Day 1에 화면을 하나도 만들지 않은 이유**
+>
+> 이 앱의 핵심은 *"구매 기록이 없으면 고민 중, 있는데 평가가 덜 됐으면 구매 완료, 다 됐으면 평가 완료"* 같은 **규칙**입니다.
+> 이 규칙은 홈 목록 배지·상세 배지·필터 개수·진행률 바 **네 곳이 동시에** 씁니다.
+> 규칙이 틀리면 네 곳이 동시에 틀립니다. 그래서 규칙을 먼저 순수 함수로 만들고 테스트로 고정했습니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-## Learn More
+## 1. 왜 만들었나
 
-To learn more about Next.js, take a look at the following resources:
+원두를 살 때마다 세 개를 비교합니다. 가격, 용량, 리뷰를 다 뒤져보고 하나를 고릅니다.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+그런데 3개월 뒤에 다시 살 때가 되면 **무엇을 비교했는지도, 왜 그걸 골랐는지도 기억나지 않습니다.**
+사지 않았던 후보 두 개는 흔적도 없이 사라집니다. 그래서 매번 처음부터 다시 비교합니다.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+이 앱은 그 세 가지를 하나로 잇습니다.
 
-## Deploy on Vercel
+```
+구매 전  무엇을 고민했나  →  구매  무엇을 왜 골랐나  →  사용 후  실제로 어땠나
+                                                              │
+                          다음 구매 ◀───── 그 후보를 다시 불러온다
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 2. 핵심 기능
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+⬜ 표시는 아직 구현 전입니다.
+
+| | 기능 | 상태 |
+|---|---|:---:|
+| 후보 비교 | 최대 4개, 단위가 달라도 **100g당 가격 자동 환산** (1kg vs 500g) | ⬜ |
+| 구매 결과 연결 | 한 주문에 여러 상품, 실제 결제금액과 **선택한 이유** 기록 | ⬜ |
+| 상품별 평가 | 별점·재구매 의사·한 줄 후기. **주문 단위가 아니라 상품 단위** | ⬜ |
+| 미선택 후보 보존 | 사지 않은 후보가 사라지지 않고 남는다 | ⬜ |
+| 과거 후보 불러오기 | 지난 고민의 후보를 **독립 복사본**으로 가져온다 | ⬜ |
+| 카테고리 + 자유 태그 | 태그는 별도 저장소 없이 고민들에서 파생 | ⬜ |
+
+**의도적으로 만들지 않는 것** — 로그인 · 서버 API · DB · 상품 이미지 · 쇼핑몰 정보 자동 수집 · AI 추천 · 자동 승자 결정 · 가격 변동 추적 · 배송비 자동 계산 · 복수 주문 이력 · 휴지통과 복구
+
+## 3. 스크린샷
+
+Day 7에 추가합니다. (홈 / 후보 비교 / 구매 등록 / 평가 · 모바일 1장 포함)
+
+## 4. 기술 스택
+
+| 영역 | 선택 | 비고 |
+|---|---|---|
+| 프레임워크 | Next.js 16 (App Router) | Turbopack 기본, `params`는 Promise |
+| 언어 | TypeScript 5.9 | `strict: true`, `no-explicit-any: error` |
+| 스타일 | Tailwind CSS v4 | 설정 파일 없이 `@import "tailwindcss"` |
+| 테스트 | Vitest 4 | 순수 함수는 `node`, storage만 `jsdom` |
+| 저장소 | localStorage | 서버·DB 없음 |
+| 배포 | Vercel | |
+
+**쓰지 않기로 한 것** — 상태 관리 라이브러리 · React Hook Form · Zod · 디자인 시스템 · E2E 테스트
+
+폼 상태 관리와 검증 경계를 직접 구현하는 것이 이 프로젝트의 학습 목표입니다.
+라이브러리를 쓰면 그 학습이 통째로 사라집니다.
+
+## 5. 실행 방법
+
+```bash
+npm install
+
+npm run dev          # http://localhost:3000
+npm test             # vitest run — 한 번 실행 후 종료
+npm run test:watch   # 개발 중 감시 모드
+npm run typecheck    # tsc --noEmit (빌드보다 빠른 타입 확인)
+npm run lint
+npm run build
+```
+
+요구 사항: **Node.js 20.9 이상** (Next.js 16 / Vitest 4의 공통 최소선)
+
+## 6. 데이터 구조
+
+```
+Decision (고민)
+├─ 기본정보  title / category / tags[1~3] / purpose / budget?
+├─ Candidate[1~4] (후보)
+│    상품명 · 비교가격 · 브랜드 · 옵션 · 사용경험 · 구성량+단위
+│    구매처 · 링크 · 배송메모 · 기대[0~3] · 걱정[0~3] · 메모
+└─ Order | null (구매 주문 0~1건)
+     ├─ 주문 공통  구매일 · 최종 결제금액 · 구매처 · 이유
+     └─ PurchasedItem[1~N]   ← candidateId로 후보를 참조 (중복 불가)
+          ├─ 실제 단가 · 구매 개수 · 실제 구성량
+          └─ Review | null   ← 평가는 여기에 중첩
+```
+
+### 왜 `Review`를 `PurchasedItem` 안에 중첩했나
+
+"구매 기록을 취소하면 평가도 함께 삭제된다"는 규칙이 있습니다.
+
+평가를 별도 목록으로 두면 취소할 때마다 **손으로 챙겨야** 하고, 한 번 빠뜨리면 주인 없는 평가가 남습니다.
+중첩하면 `order = null` **한 줄로 규칙이 자동 충족**됩니다.
+
+> 정합성을 코드가 아니라 **데이터 구조로 보장**하는 쪽을 택했습니다.
+
+### 왜 `status`를 저장하지 않나
+
+상태를 바꾸는 경로가 5개입니다 — `setOrder` · `cancelOrder` · `setReview` · `removeReview` · `updateDecision`.
+저장하면 다섯 곳 **모두**에서 갱신해야 하고, 한 곳만 빠뜨리면 데이터가 거짓말을 합니다.
+
+```ts
+export function getStatus(d: Decision): DecisionStatus {
+  if (!d.order) return 'considering';
+  const allReviewed = d.order.items.every((it) => it.review !== null);
+  return allReviewed ? 'reviewed' : 'purchased';
+}
+```
+
+### 왜 `PurchasedItem`에 별도 `id`가 없나
+
+한 주문에 같은 후보가 두 번 들어올 수 없다는 규칙이 있어서, `candidateId`가 이미 주문 안에서 유일합니다.
+**쓰이지 않는 식별자는 만들지 않습니다.** 그래서 평가 액션 시그니처가 `setReview(decisionId, candidateId, review)`입니다.
+
+## 7. 기술적 의사결정
+
+### 7.1 상태를 저장하지 않고 파생했다
+
+**이 결정의 이득이 실제로 확인된 지점은 평가 삭제 기능을 붙일 때였습니다.**
+
+*평가 완료 → 구매 완료*는 **되돌아가는** 방향의 전환입니다.
+그런데 `removeReview`가 한 일은 `review = null` 하나뿐이었고, `getStatus`와 `getReviewProgress`는 **한 글자도 고치지 않았습니다.**
+
+`status`를 저장했다면 정방향 전환 4개에 더해 역방향까지 구현해야 했고, **역방향을 빠뜨리는 것이 가장 흔한 버그**입니다.
+
+```ts
+// 이 테스트가 그 성질을 고정한다
+it('평가를 지우면 상태와 진행률이 다시 계산된다 (2/2 → 1/2)', () => {
+  expect(getStatus(reviewed)).toBe('reviewed');
+
+  const afterRemove = /* review만 null로 바꾼 것 */;
+
+  expect(getStatus(afterRemove)).toBe('purchased');
+  expect(getReviewProgress(afterRemove)).toEqual({ done: 1, total: 2 });
+});
+```
+
+**트레이드오프** — 목록 필터링 시 매번 계산합니다. 기록 수백 건 규모에서는 무의미한 비용이고, 커지면 `useMemo`로 해결합니다.
+
+### 7.2 저장 성공을 확인한 뒤에만 화면을 바꾼다
+
+localStorage 저장은 실패할 수 있습니다. 용량 초과, 사생활 보호 모드, 저장소 차단 설정.
+
+```
+❌ 흔한 순서              ✅ 이 프로젝트
+setDecisions(next)        const r = save(next)
+save(next)                if (!r.ok) { 안내만 하고 종료 }
+                          setDecisions(next)
+```
+
+앞의 순서에서는 저장이 실패해도 화면이 성공한 것처럼 넘어가고, 새로고침하면 데이터가 사라집니다.
+**사용자는 무엇을 잃었는지도 모릅니다.**
+
+모든 쓰기가 `commit()` 하나를 통과하고, 액션은 `ActionResult`를 반환하며, 호출 측은 `ok === true`일 때만 이동합니다.
+
+> 낙관적 업데이트는 **실패를 되돌릴 수 있을 때만** 정당합니다.
+> 이 앱은 실패 시 되돌릴 원본이 이미 사라진 상태입니다.
+
+### 7.3 폼 값 타입과 도메인 타입을 분리했다
+
+`<input>`의 값은 **항상 문자열**이고 라디오는 **미선택 상태**를 가집니다.
+도메인 타입으로 폼을 표현하면 `''`와 `NaN`이 도메인에 스며듭니다.
+
+```
+FormValues  category: CategoryId | ''   budget: string    ← 화면
+    ↓ 검증 → 파싱
+Input       category: CategoryId        budget?: number   ← 액션 경계
+    ↓ 저장
+Decision    + id, createdAt, order                        ← 저장
+```
+
+초기 설계에서 폼 상태를 도메인 타입으로 표현했더니, 검증 함수의 `if (!v.category)`가
+**타입상 도달 불가능한 죽은 코드**가 되었습니다. 타입이 현실을 반영하지 못하면 검증이 형식만 남습니다.
+
+### 7.4 `Partial<Decision>` 대신 전용 입력 타입을 만들었다
+
+```ts
+update(id, patch: Partial<Decision>)   // ❌ order·평가·createdAt까지 덮어쓸 수 있다
+updateDecision(id, input: DecisionEditInput)   // ✅ 수정 가능한 6개 필드만
+```
+
+`DecisionEditInput`에는 애초에 `order`가 없습니다. 구매와 평가는 전용 액션으로만 바뀝니다.
+**권한을 문서나 코드 리뷰가 아니라 타입으로 표현했습니다.** 잘못된 수정이 컴파일 에러가 됩니다.
+
+### 7.5 자동 검색을 세 번 고치고 결국 제거했다
+
+가장 할 말이 많은 항목입니다.
+
+```
+v1.1  useEffect([queryText, filters.q])
+      → 타이머가 예약 시점의 filters를 캡처해 새 카테고리를 되돌림
+
+v1.2  useCallback(..., [filters, router])
+      → 필터가 바뀌면 타이머 재예약. 그러나 router.replace()와
+        새 Server props 도착 사이의 시간차는 남음
+
+v1.3  searchTimerRef + latestFiltersRef + searchFocusedRef
+      → 응답 전 의도를 ref에 보존. 그래도 뒤로가기와 포커스가 겹치면
+        입력 문자열과 URL의 q가 어긋남
+
+v1.4  자동 검색 제거. <form> submit 하나로 확정
+      → 경쟁 상태가 성립할 구조 자체가 사라짐
+```
+
+세 번의 수정이 모두 **"타이머가 어느 시점의 상태를 보는가"**라는 같은 문제를 다르게 방어했습니다.
+네 번째에 와서야 **그 질문을 없앨 수 있다**는 것을 인정했습니다.
+
+**잃은 것** — 타이핑에 따라오는 즉시성. Enter를 한 번 눌러야 합니다.
+**얻은 것** — ref 3개와 effect 2개가 사라지고, 상태가 `queryText` 하나로 줄고, 뒤로가기 동기화에서 조건이 사라졌습니다. 수동 검증도 "타이머 경쟁"에서 **"사람이 손으로 확인할 수 있는 종류"**로 바뀌었습니다.
+
+> **정교하게 방어하는 것보다 방어할 필요가 없게 만드는 편이 나을 때가 있습니다.**
+> 다만 이 결론은 "자동 검색은 항상 나쁘다"가 아닙니다. 목록이 수천 건이거나 검색이 주 진입점이라면 반대 판단이 옳습니다. **여기서는 7일 예산과 기능의 중요도가 판단의 근거였습니다.**
+
+### 그 외
+
+| 결정 | 요지 |
+|---|---|
+| localStorage 앱인데 Server Component를 얇게 유지 | Server는 **URL 해석만** 한다. 없는 데이터를 읽는 코드를 쓰지 않는다 |
+| 필터 상태를 URL에 두고 조합 로직을 순수 함수로 분리 | `useSearchParams()`를 쓰지 않는다. 같은 정보를 두 경로로 읽으면 진실이 흐려진다 |
+| 후보 복사를 명시적 필드 나열로 구현 | `{ ...source }`는 나중에 필드가 늘 때 **복사 제외 대상까지 딸려온다** |
+| 평가가 있어도 잠그는 범위를 최소로 | 잠기는 것은 `candidateId` 집합뿐. 금액 오타를 고치려고 평가를 지우게 하지 않는다 |
+| 폼·스키마 검증 라이브러리를 쓰지 않음 | 학습 목표가 폼 상태 관리 자체다 |
+| E2E 테스트를 넣지 않음 | 7일 예산에서 유지비가 얻는 신뢰보다 크다 |
+
+## 8. 테스트
+
+```bash
+npm test
+# Test Files  2 passed (2)
+#      Tests  30 passed (30)
+```
+
+**버그가 실제로 발생하는 지점**을 순수 함수로 분리해 집중 테스트합니다.
+
+| 블록 | 대상 | 확인하는 것 |
+|---|---|---|
+| 1 | `getStatus` · `getReviewProgress` | 상태 파생, **역방향 전환 포함** |
+| 2 | `getUnitPrice` | kg→g, L→ml 환산, `개`는 개당 라벨, 계산 불가 시 `null` |
+| 3 | `getTotalAmount` · `formatAmount` | 총 구매량, **부동소수점 오차 처리** |
+| 4 | `load` 파싱·형태 검사 | 깨진 JSON, 버전 불일치, 타입 오류 |
+| 5 | `load` 참조 관계 | id 중복, 존재하지 않는 후보 참조 |
+
+### 환경을 파일별로 나눈 이유
+
+기본은 `node`, `storage.test.ts`만 `jsdom`입니다.
+
+```
+Duration 1.79s (transform 76ms, import 110ms, tests 15ms, environment 1.54s)
+                                                          ^^^^^^^^^^^^^^^^^^
+```
+
+**환경 준비에만 1.54초**가 듭니다. 전부 jsdom으로 올리면 실행 시간이 몇 배가 됩니다.
+
+### 왜 E2E를 넣지 않았나
+
+7일 예산에서 E2E의 유지비(셀렉터 깨짐, 실행 시간, CI 설정)가 얻는 신뢰보다 큽니다.
+대신 단위 환산 · 상태 파생 · 필터 조합 · 복사 독립성 · 저장 실패를 순수 함수로 분리했습니다.
+
+UI 흐름은 **수동 검증 체크리스트**로 대체합니다. 자동화하지 않은 것을 문서화한 것이지, 검증하지 않은 것이 아닙니다.
+
+## 9. 접근성 체크리스트
+
+Day 2 이후 화면 작업과 함께 채웁니다. 기준은 다음과 같습니다.
+
+**필수** — 모든 input에 `<label htmlFor>` · 에러에 `aria-invalid` + `aria-describedby` · 첫 오류 필드로 포커스 · 라디오 그룹을 `<fieldset><legend>`로 · 칩은 `<button aria-pressed>` · 검색은 `<form role="search">` · 상태는 **색 + 텍스트 병행** · 모달의 `role="dialog"` `aria-modal` Esc 진입/복귀 포커스 · 진행률 `role="progressbar"` · `:focus-visible` 아웃라인 유지 · 명도 대비 4.5:1
+
+**선택으로 남긴 것** — 모달의 완전한 Tab 순환 트랩.
+Esc·진입 포커스·복귀 포커스·`aria-modal`까지 있으면 **모달을 인지하고 조작하고 벗어날 수 있습니다.**
+Tab 트랩 직접 구현은 가치가 있지만 난도가 높고 버그가 잘 생겨서, 7일 예산에서는 위 4가지를 확실히 하는 쪽을 택했습니다.
+
+> 별점을 `<div onClick>`으로 만들지 않고 라디오 그룹으로 만드는 것이 대표적인 기준선입니다.
+
+## 10. 알려진 동작과 한계
+
+**버그가 아니라 범위 결정입니다.**
+
+| | 한계 | 사용자가 겪는 모습 |
+|---|---|---|
+| 1 | 브라우저·도메인별 데이터 격리 | 다른 브라우저로 접속하면 빈 화면. 데이터 0건일 때 *샘플 데이터 불러오기*로 완화 |
+| 2 | 기기 간 동기화 없음 | PC에서 만든 기록이 휴대폰에 없다 |
+| 3 | 등록 중 새로고침 시 초안 유실 | 1단계 입력 후 2단계에서 새로고침하면 처음부터 |
+| 4 | 한 고민에 한 주문 | 추가 구매는 새 고민으로 기록 |
+| 5 | 배송비·쿠폰·할인 미분해 | 최종 결제금액만 남는다 |
+| 6 | 평가가 없으면 실제 사용 여부를 알 수 없다 | 구매만 하고 평가 안 한 후보는 `familiarity`를 보정하지 않는다 |
+| 7 | 후보 최대 4개 | 가로 비교의 가독성 한계 |
+| 8 | 상품 마스터 없음 | 불러오기는 값 복사. "이 상품의 전체 구매 이력"은 볼 수 없다 |
+| 9 | 탭 간 실시간 동기화 없음 | 두 탭을 동시에 열면 나중에 저장한 쪽이 이긴다 |
+| 10 | localStorage 변조를 완벽히 복구하지 않는다 | **아래 참고** |
+| 11 | 자동 검색 없음 | Enter나 *검색* 버튼을 눌러야 결과가 바뀐다 |
+| 12 | 구성량 표시는 소수 둘째 자리까지 | `0.125kg` → `0.13kg` |
+
+### 10번에 대해 — 의도적으로 통과시키는 값이 있습니다
+
+저장소 검증의 목표는 **"화면을 즉시 깨뜨릴 수 있는 값을 걸러내는 것"**이지 데이터 정확성 보장이 아닙니다.
+
+| 변조 | 처리 | 이유 |
+|---|---|---|
+| `brand = {}` | ❌ corrupted | 글자로 그리면 `[object Object]` |
+| `pros = [1, 2]` | ❌ corrupted | 리스트 렌더에서 터진다 |
+| 없는 후보를 가리키는 주문 | ❌ corrupted | 상품 카드가 이름·가격을 못 찾는다 |
+| **`pros`가 4개** | ✅ **통과** | **화면이 안 깨진다** |
+
+`pros`가 4개인 것은 규칙 위반입니다. 하지만 여기서 `corrupted`를 내면 **사용자 기록 전체가 빈 상태로 되돌아갑니다.**
+항목 하나가 하나 많다는 이유로 3개월치를 날리는 겁니다. **손실이 문제보다 큽니다.**
+
+이 값은 폼 검증과 Provider 불변식이 잡습니다. 그리고 **이 경로가 존재하기 때문에** 폼 검증의 개수 검사가 죽은 코드가 아닙니다.
+
+### 서버 전환 시
+
+교체 지점은 `storage.ts`의 `load` / `save` **두 함수뿐**입니다.
+
+- 컴포넌트는 `localStorage`라는 단어를 모릅니다
+- 모든 변경은 `useDecisions()`가 노출한 액션을 통해서만 일어납니다
+- 이미 모든 액션이 `ActionResult`를 반환하므로 `Promise<ActionResult>`로 바꿔도 **호출 측 분기 코드는 그대로** 쓸 수 있습니다
+
+## 11. 개발 기록
+
+설계서를 먼저 쓰고 시작했습니다. 코드를 쓰기 전에 **모순 42건을 찾아 해결**했고, 그 과정이 문서에 남아 있습니다.
+
+대표적인 것 몇 가지:
+
+- **구매를 사용 경험과 동일시했다** — 원두를 샀지만 개봉하지 않았을 수 있습니다. 보정 근거를 "구매 여부"에서 **"평가의 존재"**로 바꿨습니다. 별점과 후기를 쓰려면 실제로 써봐야 하니까요. 반대로 평가가 없다고 사용하지 않았다는 뜻은 아니므로, **추측하지 않고 원본 값을 유지**합니다.
+- **문서가 코드보다 과하게 잠갔다** — 코드는 `candidateId` 집합만 비교했는데 문서는 "구매정보 전체 수정 불가"처럼 서술했습니다. 구현자가 문서를 따랐다면 입력 행 전체를 `disabled`로 만들었을 겁니다. **문서가 코드보다 과하게 잠그는 것도 버그입니다.**
+- **일시적 실패 안내가 영구적으로 남았다** — 사용자가 기록을 지워 공간을 확보하고 저장에 성공해도 "저장 공간이 부족합니다" 배너가 사라지지 않았습니다. **저장 성공이 곧 그 안내의 반증**이므로 `commit()`에서 정리합니다.
+
+### Day 1에서 실제로 겪은 것
+
+- **`0.3 × 3 = 0.8999999999999999`** — 부동소수점 오차입니다. 반올림 지점을 여러 함수에 흩뿌리면 어디서 값이 바뀌었는지 추적할 수 없어, **표시 계층 한 곳**에서만 처리하도록 했습니다. 계산 함수가 반올림하지 않는다는 것 자체를 테스트로 고정했습니다.
+- **`2026-02-30`이 3월 2일로 조용히 넘어간다** — `new Date()`의 rollover입니다. 만든 뒤 연·월·일을 되물어 확인합니다.
+- **`crypto.randomUUID()`는 HTTPS와 localhost에만 있다** — 실기기를 로컬 IP로 확인할 때 저장이 터집니다. 5줄짜리 폴백으로 막았습니다.
+- **"설계서에 컴파일 오류가 있다"고 판단했는데 아니었다** — TypeScript 4.4의 별칭 조건 흐름 분석 덕분에 정상 컴파일됩니다. `npx tsc --noEmit` 한 번이면 30초 만에 확인할 수 있는 것을 추측으로 말했습니다. **확인하고 말하기.**
+
+---
+
+<sub>7일 토이 프로젝트 · 하루 5~6시간 · 설계서 v1.4.4 기준</sub>
