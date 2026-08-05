@@ -5,7 +5,12 @@ import type { FormEvent } from 'react';
 
 import { AmountInput } from '@/components/ui/AmountInput';
 import { Button } from '@/components/ui/Button';
-import { Field, fieldId, inputClass } from '@/components/ui/Field';
+import {
+  Field,
+  fieldId,
+  flexInputClass,
+  fullInputClass,
+} from '@/components/ui/Field';
 import { ListInput } from '@/components/ui/ListInput';
 import { Modal } from '@/components/ui/Modal';
 import { getUnitPrice } from '@/lib/derive';
@@ -139,7 +144,7 @@ export function CandidateFormModal({
               maxLength={50}
               placeholder="올드독"
               onChange={(e) => setField('name', e.target.value)}
-              className={inputClass}
+              className={fullInputClass}
             />
           )}
         </Field>
@@ -160,7 +165,7 @@ export function CandidateFormModal({
                 value={values.comparePrice}
                 placeholder="18000"
                 onChange={(e) => setField('comparePrice', e.target.value)}
-                className={inputClass}
+                className={flexInputClass}
               />
               <span className="shrink-0 text-sm text-slate-500">원</span>
             </div>
@@ -197,7 +202,7 @@ export function CandidateFormModal({
                 maxLength={30}
                 placeholder="프릳츠"
                 onChange={(e) => setField('brand', e.target.value)}
-                className={inputClass}
+                className={fullInputClass}
               />
             )}
           </Field>
@@ -211,7 +216,7 @@ export function CandidateFormModal({
                 maxLength={60}
                 placeholder="홀빈 / 분쇄"
                 onChange={(e) => setField('option', e.target.value)}
-                className={inputClass}
+                className={fullInputClass}
               />
             )}
           </Field>
@@ -221,7 +226,7 @@ export function CandidateFormModal({
           <legend className="mb-1.5 text-sm font-medium text-slate-800">
             사용 경험
           </legend>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             {(
               [
                 ['', '선택 안 함'],
@@ -281,7 +286,7 @@ export function CandidateFormModal({
                 maxLength={40}
                 placeholder="공식몰"
                 onChange={(e) => setField('seller', e.target.value)}
-                className={inputClass}
+                className={fullInputClass}
               />
             )}
           </Field>
@@ -294,7 +299,7 @@ export function CandidateFormModal({
                 value={values.link}
                 placeholder="https://"
                 onChange={(e) => setField('link', e.target.value)}
-                className={inputClass}
+                className={fullInputClass}
               />
             )}
           </Field>
@@ -314,7 +319,7 @@ export function CandidateFormModal({
               maxLength={80}
               placeholder="3만원 이상 무료배송"
               onChange={(e) => setField('shippingNote', e.target.value)}
-              className={inputClass}
+              className={fullInputClass}
             />
           )}
         </Field>
@@ -328,7 +333,7 @@ export function CandidateFormModal({
               maxLength={200}
               placeholder="리뷰에서 산미 얘기가 갈린다"
               onChange={(e) => setField('memo', e.target.value)}
-              className={`${inputClass} h-auto py-2.5`}
+              className={`${fullInputClass} h-auto py-2.5`}
             />
           )}
         </Field>

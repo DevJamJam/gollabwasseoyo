@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
-import { fieldErrorId, fieldId, inputClass } from './Field';
+import { fieldErrorId, fieldId, flexInputClass } from './Field';
 
 /**
  * 짧은 문장 여러 개를 받는 입력. 기대되는 점 · 걱정되는 점 · 만족한 점 · 아쉬운 점 네 곳에서 쓴다.
@@ -90,7 +90,10 @@ export function ListInput({
               key={index}
               className="flex items-center gap-2 rounded-md bg-slate-50 py-1.5 pl-3 pr-1.5"
             >
-              <span className="flex-1 text-sm text-slate-700">{value}</span>
+              {/* min-w-0이 없으면 긴 문장이 칸을 밀어내 가로로 넘친다 */}
+              <span className="min-w-0 flex-1 break-words text-sm text-slate-700">
+                {value}
+              </span>
               <button
                 type="button"
                 onClick={() => removeAt(index)}
@@ -116,7 +119,7 @@ export function ListInput({
           onKeyDown={onKeyDown}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className={inputClass}
+          className={flexInputClass}
         />
         <button
           type="button"

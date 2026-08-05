@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
-import { fieldErrorId, fieldId, inputClass } from '@/components/ui/Field';
+import { fieldErrorId, fieldId, fullInputClass } from '@/components/ui/Field';
 import { CHIP_TONE, TAG_TONE, toneForTag } from '@/components/ui/tone';
 
 /**
@@ -123,7 +123,7 @@ export function TagInput({
         onBlur={() => add(draft)}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
-        className={inputClass}
+        className={fullInputClass}
       />
 
       {unused.length > 0 && !full && (

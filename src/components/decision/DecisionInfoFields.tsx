@@ -2,7 +2,13 @@
 
 import { TagInput } from '@/components/decision/TagInput';
 import { Chip } from '@/components/ui/Chip';
-import { Field, fieldErrorId, fieldId, inputClass } from '@/components/ui/Field';
+import {
+  Field,
+  fieldErrorId,
+  fieldId,
+  flexInputClass,
+  fullInputClass,
+} from '@/components/ui/Field';
 import { CATEGORIES } from '@/lib/types';
 import type { CategoryId, DecisionFormValues } from '@/lib/types';
 import type { Errors } from '@/lib/validation';
@@ -42,7 +48,7 @@ export function DecisionInfoFields({
             maxLength={60}
             placeholder="겨울 홈카페 원두"
             onChange={(e) => onField('title', e.target.value)}
-            className={inputClass}
+            className={fullInputClass}
           />
         )}
       </Field>
@@ -109,7 +115,7 @@ export function DecisionInfoFields({
             maxLength={200}
             placeholder="매일 아침 2잔, 산미 적은 것"
             onChange={(e) => onField('purpose', e.target.value)}
-            className={`${inputClass} h-auto py-2.5`}
+            className={`${fullInputClass} h-auto py-2.5`}
           />
         )}
       </Field>
@@ -124,7 +130,7 @@ export function DecisionInfoFields({
               value={values.budget}
               placeholder="40000"
               onChange={(e) => onField('budget', e.target.value)}
-              className={inputClass}
+              className={flexInputClass}
             />
             <span className="shrink-0 text-sm text-slate-500">원</span>
           </div>

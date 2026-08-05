@@ -3,7 +3,7 @@
 import { UNITS } from '@/lib/types';
 import type { Unit } from '@/lib/types';
 
-import { fieldErrorId, fieldId, inputClass } from './Field';
+import { fieldErrorId, fieldId, flexInputClass, inputClass } from './Field';
 
 /**
  * 구성량 = 숫자 + 단위.
@@ -72,7 +72,7 @@ export function AmountInput({
           onChange={(e) => onValueChange(e.target.value)}
           aria-invalid={valueError ? true : undefined}
           aria-describedby={error ? fieldErrorId(name) : undefined}
-          className={inputClass}
+          className={flexInputClass}
         />
 
         <select

@@ -13,14 +13,34 @@
  *
  * 파일마다 복사해 붙이면 Day 4쯤에 테두리 색과 높이가 제각각이 된다.
  * 여기서 한 번만 정한다.
+ *
+ * ⚠️ **너비는 여기 넣지 않는다.**
+ * w-full을 넣어뒀더니 `${inputClass} w-24` 처럼 덮어쓰려는 곳에서
+ * width가 두 번 걸렸다. 어느 쪽이 이기는지는 클래스를 쓴 순서가 아니라
+ * Tailwind가 만든 CSS 안의 순서로 정해져서, 의도와 반대로 동작할 수 있다.
+ * 거기에 shrink-0까지 붙으면 줄어들지도 못해 가로 스크롤이 생긴다.
+ *
+ * 너비는 쓰는 자리에서 정한다.
+ *   혼자 있을 때        w-full
+ *   flex 줄 안에 있을 때 flex-1 min-w-0
+ *
+ * min-w-0이 필요한 이유: flex 자식은 기본이 min-width:auto라
+ * 내용보다 작게 줄어들지 못한다. input은 size 기본값 20자만큼을
+ * 최소 너비로 갖기 때문에 좁은 칸에서 그대로 넘친다.
  */
 export const inputClass = [
-  'h-11 w-full rounded-md border border-slate-300 px-3 text-sm',
+  'h-11 rounded-md border border-slate-300 px-3 text-sm',
   'placeholder:text-slate-400',
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900',
   'aria-invalid:border-red-500',
   'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400',
 ].join(' ');
+
+/** 혼자 한 줄을 다 쓰는 입력칸. */
+export const fullInputClass = `${inputClass} w-full`;
+
+/** flex 줄 안에서 남는 공간을 채우는 입력칸. */
+export const flexInputClass = `${inputClass} min-w-0 flex-1`;
 
 /** label의 htmlFor · input의 id · 포커스 이동이 모두 이 함수를 쓴다. */
 export function fieldId(key: PropertyKey): string {
