@@ -8,6 +8,20 @@
  * 무슨 칸이었는지 알 수 없게 된다.
  */
 
+/**
+ * 입력칸 공통 스타일.
+ *
+ * 파일마다 복사해 붙이면 Day 4쯤에 테두리 색과 높이가 제각각이 된다.
+ * 여기서 한 번만 정한다.
+ */
+export const inputClass = [
+  'h-11 w-full rounded-md border border-slate-300 px-3 text-sm',
+  'placeholder:text-slate-400',
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900',
+  'aria-invalid:border-red-500',
+  'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400',
+].join(' ');
+
 /** label의 htmlFor · input의 id · 포커스 이동이 모두 이 함수를 쓴다. */
 export function fieldId(key: PropertyKey): string {
   return 'f-' + String(key);
