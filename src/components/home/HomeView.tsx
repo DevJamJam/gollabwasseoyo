@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { DecisionCard } from '@/components/home/DecisionCard';
+import { STATUS_TONE } from '@/components/statusTone';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HomeSkeleton } from '@/components/ui/Skeleton';
+import { toneForTag } from '@/components/ui/tone';
 import {
   countByStatus,
   filterDecisions,
@@ -146,6 +148,7 @@ export function HomeView({ filters }: { filters: Filters }) {
               {STATUSES.map((s) => (
                 <Chip
                   key={s}
+                  tone={STATUS_TONE[s]}
                   selected={filters.status === s}
                   onClick={() => toggleStatus(s)}
                   count={counts[s]}
@@ -186,6 +189,7 @@ export function HomeView({ filters }: { filters: Filters }) {
                 {tags.map((t) => (
                   <Chip
                     key={t}
+                    tone={toneForTag(t)}
                     selected={filters.tag === t}
                     onClick={() => toggleTag(t)}
                   >
