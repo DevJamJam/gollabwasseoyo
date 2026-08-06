@@ -39,6 +39,29 @@ export function CandidateSection({
     null | 'new' | { id: string; form: CandidateFormValues }
   >(null);
 
+  /**
+   * 모달을 열 때마다 1씩 오르는 값. 모달의 key로 쓴다.
+   *
+   * key가 바뀌면 React는 그 컴포넌트를 버리고 새로 만든다.
+   * 그러면 안에 있던 useState가 처음부터 시작하므로,
+   * '이전 입력이 남아 있다'는 문제가 생길 수 없다.
+   *
+   * '새 후보 추가'를 두 번 연속 누르는 경우가 문제였다.
+   * 넘기는 값(initial)이 두 번 다 undefined라서 값 비교로는 구분할 수 없다.
+   * 열린 횟수를 세면 언제나 달라진다.
+   */
+  const [openCount, setOpenCount] = useState(0);
+
+  function openNew(): void {
+    setEditing('new');
+    setOpenCount((n) => n + 1);
+  }
+
+  function openEdit(c: Candidate): void {
+    setEditing({ id: c.id, form: toCandidateForm(c) });
+    setOpenCount((n) => n + 1);
+  }
+
   const full = candidates.length >= MAX;
 
   function upsert(candidate: Candidate): void {
@@ -80,7 +103,7 @@ export function CandidateSection({
             비교할 상품을 추가해 고민을 기록해 보세요.
           </p>
           <div className="mt-5">
-            <Button variant="primary" onClick={() => setEditing('new')}>
+            <Button variant="primary" onClick={openNew}>
               + 새 후보 추가
             </Button>
           </div>
@@ -106,9 +129,7 @@ export function CandidateSection({
                       ? '구매한 후보는 삭제할 수 없습니다. 구매 기록을 취소한 뒤 삭제하세요.'
                       : '후보가 하나뿐입니다. 마지막 후보를 없애려면 고민 전체를 삭제하세요.'
                   }
-                  onEdit={() =>
-                    setEditing({ id: c.id, form: toCandidateForm(c) })
-                  }
+                  onEdit={() => openEdit(c)}
                   onDelete={() => remove(c.id)}
                 />
               );
@@ -116,7 +137,7 @@ export function CandidateSection({
           </ul>
 
           <div>
-            <Button onClick={() => setEditing('new')} disabled={full}>
+            <Button onClick={openNew} disabled={full}>
               + 새 후보 추가
             </Button>
             {full && (
@@ -130,13 +151,16 @@ export function CandidateSection({
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      <CandidateFormModal
-        open={editing !== null}
-        initial={editing !== null && editing !== 'new' ? editing : undefined}
-        onClose={() => setEditing(null)}
-        onSubmit={upsert}
-        newId={newId}
-      />
+      {/* 열려 있을 때만 마운트한다. key가 바뀌면 안의 상태가 초기화된다. */}
+      {editing !== null && (
+        <CandidateFormModal
+          key={openCount}
+          initial={editing === 'new' ? undefined : editing}
+          onClose={() => setEditing(null)}
+          onSubmit={upsert}
+          newId={newId}
+        />
+      )}
     </div>
   );
 }

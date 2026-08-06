@@ -37,7 +37,6 @@ import type { Errors } from '@/lib/validation';
  */
 
 interface Props {
-  open: boolean;
   /** 수정이면 기존 값, 새로 만들면 undefined */
   initial?: { id: string; form: CandidateFormValues };
   onClose: () => void;
@@ -46,8 +45,20 @@ interface Props {
   newId: () => string;
 }
 
+/**
+ * 이 컴포넌트는 **열릴 때만 마운트된다.** 부모가 조건부로 렌더하고,
+ * 열 때마다 다른 key를 준다. 그래서 여기서 초기화 코드를 따로 두지 않는다.
+ *
+ * 처음에는 '값이 바뀌면 초기화'로 짰다가 버그를 냈다.
+ * 새 후보를 추가할 때 initial은 언제나 undefined라서,
+ * undefined !== undefined 가 false가 되어 초기화가 아예 안 일어났다.
+ * 이전에 입력한 값이 그대로 남았다.
+ *
+ * '값이 바뀌었나'가 아니라 '새로 열렸나'가 기준이어야 했다.
+ * key를 바꿔 다시 마운트하면 useState가 처음부터 시작하므로
+ * 그 판단을 코드로 쓸 필요가 없다.
+ */
 export function CandidateFormModal({
-  open,
   initial,
   onClose,
   onSubmit,
@@ -57,20 +68,6 @@ export function CandidateFormModal({
     initial?.form ?? EMPTY_CANDIDATE_FORM,
   );
   const [errors, setErrors] = useState<Errors<CandidateFormValues>>({});
-
-  /**
-   * 모달이 열릴 때마다 폼을 초기값으로 되돌린다.
-   *
-   * key로 컴포넌트를 다시 마운트시키는 방법도 있지만,
-   * 여기서는 부모가 open을 false로 만들었다가 다시 true로 만들 때
-   * initial이 바뀌므로 그것을 기준으로 삼는다.
-   */
-  const [lastInitial, setLastInitial] = useState(initial);
-  if (initial !== lastInitial) {
-    setLastInitial(initial);
-    setValues(initial?.form ?? EMPTY_CANDIDATE_FORM);
-    setErrors({});
-  }
 
   /**
    * 제네릭 setField.
@@ -118,7 +115,7 @@ export function CandidateFormModal({
 
   return (
     <Modal
-      open={open}
+      open
       title={initial ? '후보 수정' : '후보 추가'}
       onClose={onClose}
       footer={
@@ -133,8 +130,22 @@ export function CandidateFormModal({
       {/*
         submit 버튼이 Modal의 footer에 있어서 form 밖에 있다.
         form 속성으로 id를 가리키면 밖에서도 제출할 수 있다.
+
+        noValidate — 브라우저 기본 검증을 끈다.
+        type="url" 입력칸에 잘못된 값이 있으면 브라우저가 제출 자체를 막고
+        자기 말풍선("URL을 입력하세요")을 띄운다. 그러면 우리 검증이
+        실행조차 안 돼서 다른 필드 오류가 함께 보이지 않고,
+        문구도 브라우저·언어 설정마다 달라진다.
+        검증을 직접 하기로 한 이상 브라우저 검증은 꺼야 한다.
+
+        type="url"은 그대로 둔다. 모바일 키보드가 달라지는 이점은 남는다.
       */}
-      <form id="candidate-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form
+        id="candidate-form"
+        noValidate
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-5"
+      >
         <Field name="name" label="상품명" required error={errors.name}>
           {(a) => (
             <input
