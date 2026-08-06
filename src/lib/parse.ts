@@ -25,6 +25,7 @@ import type {
   Candidate,
   CandidateFormValues,
   CategoryId,
+  Decision,
   DecisionCreateInput,
   DecisionFormValues,
 } from './types';
@@ -64,7 +65,26 @@ export function toCandidate(
   };
 }
 
-/** 도메인 → 폼. 수정 화면에서 저장된 값을 입력칸에 되돌릴 때 쓴다. */
+/* ────────────────────────────────────────────────────────────
+   도메인 → 폼 (수정 화면용 역변환)
+
+   규칙은 하나다.
+     undefined → ''    숫자 → String()    배열 → 새 배열
+
+   빠뜨리면 input의 value에 undefined가 들어가 React가 경고를 낸다.
+   "제어 컴포넌트가 비제어로 바뀌었다"는 그 경고다.
+   ──────────────────────────────────────────────────────────── */
+
+export function toDecisionForm(d: Decision): DecisionFormValues {
+  return {
+    title: d.title,
+    category: d.category,
+    tags: [...d.tags],
+    purpose: d.purpose,
+    budget: d.budget === undefined ? '' : String(d.budget),
+  };
+}
+
 export function toCandidateForm(c: Candidate): CandidateFormValues {
   return {
     name: c.name,

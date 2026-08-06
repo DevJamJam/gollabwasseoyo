@@ -7,5 +7,5 @@ import { DecisionForm } from '@/components/decision/DecisionForm';
  * 단계 전환은 DecisionForm 안의 step 상태가 한다.
  */
 export default function NewDecisionPage() {
-  return <DecisionForm />;
+  return <DecisionForm mode="create" />;
 }

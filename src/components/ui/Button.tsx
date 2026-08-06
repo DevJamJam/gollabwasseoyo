@@ -17,7 +17,13 @@ const VARIANT: Record<Variant, string> = {
   danger: 'bg-red-600 text-white hover:bg-red-700',
 };
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+/**
+ * ComponentPropsWithRef를 쓰면 ref까지 props에 포함된다.
+ *
+ * React 18까지는 함수 컴포넌트가 ref를 받으려면 forwardRef로 감싸야 했다.
+ * React 19부터는 ref가 그냥 일반 prop이라 아래처럼 펼쳐 넘기면 된다.
+ */
+type ButtonProps = React.ComponentPropsWithRef<'button'> & {
   variant?: Variant;
   size?: 'sm' | 'md';
 };
