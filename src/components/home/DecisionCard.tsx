@@ -4,7 +4,7 @@ import { STATUS_TONE } from '@/components/statusTone';
 import { Badge } from '@/components/ui/Badge';
 import { Tag } from '@/components/ui/Tag';
 import { getReviewProgress, getStatus } from '@/lib/derive';
-import { CATEGORY_LABEL, STATUS_LABEL, formatKRW } from '@/lib/format';
+import { CATEGORY_LABEL, STATUS_LABEL, formatDate, formatKRW } from '@/lib/format';
 import type { Decision } from '@/lib/types';
 
 /**
@@ -14,11 +14,6 @@ import type { Decision } from '@/lib/types';
  * 계산한다. 배지·필터 개수·상세 화면이 전부 같은 함수를 쓰기 때문에
  * 여기만 따로 틀릴 일이 없다.
  */
-
-function formatUpdatedAt(iso: string): string {
-  // ISO 문자열의 날짜 부분만 쓴다. 시각까지 보여줄 이유가 없다.
-  return iso.slice(0, 10).replace(/-/g, '.');
-}
 
 export function DecisionCard({ decision }: { decision: Decision }) {
   const status = getStatus(decision);
@@ -65,7 +60,7 @@ export function DecisionCard({ decision }: { decision: Decision }) {
       <p className="mt-1 truncate text-sm text-slate-500">{nameSummary}</p>
 
       <p className="mt-3 text-xs text-slate-400">
-        {formatUpdatedAt(decision.updatedAt)} 수정
+        {formatDate(decision.updatedAt)} 수정
       </p>
     </Link>
   );

@@ -5,10 +5,20 @@
  * 도메인 값과 계산 함수는 원값을 유지한다.
  */
 
+import { toDateOnly } from './date';
 import type { UnitPrice } from './derive';
 import type { Amount, CategoryId, DecisionStatus, Repurchase } from './types';
 
 export const formatKRW = (n: number): string => n.toLocaleString('ko-KR') + '원';
+
+/**
+ * '2026-01-10' 또는 ISO 문자열을 '2026.01.10'으로.
+ *
+ * 시각은 보여주지 않는다. 이 앱에서 몇 시에 등록했는지는 의미가 없고,
+ * 화면만 복잡해진다.
+ */
+export const formatDate = (value: string): string =>
+  toDateOnly(value).replace(/-/g, '.');
 
 /**
  * 구성량은 소수를 허용하므로(1.5kg) 곱셈에서 부동소수점 오차가 생긴다.

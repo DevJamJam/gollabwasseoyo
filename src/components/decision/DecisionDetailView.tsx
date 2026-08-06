@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Tag } from '@/components/ui/Tag';
 import { getReviewProgress, getStatus } from '@/lib/derive';
-import { CATEGORY_LABEL, STATUS_LABEL, formatKRW } from '@/lib/format';
+import { CATEGORY_LABEL, STATUS_LABEL, formatDate, formatKRW } from '@/lib/format';
 import { useDecisions } from '@/store/useDecisions';
 
 /**
@@ -145,6 +145,20 @@ export function DecisionDetailView({ id }: { id: string }) {
             예산 {formatKRW(decision.budget)}
           </p>
         )}
+
+        {/*
+          언제 고민을 시작했고 마지막으로 언제 손댔는지.
+          '3개월 뒤엔 뭘 비교했는지도 기억이 안 난다'가 이 앱의 출발점이라,
+          시간 감각을 주는 정보는 그 자체로 값이 있다.
+
+          등록과 수정이 같은 날이면 하나만 보여준다. 같은 날짜를 두 번
+          적으면 읽는 사람이 뭐가 다른지 찾느라 멈춘다.
+        */}
+        <p className="text-xs text-slate-400">
+          {formatDate(decision.createdAt)} 등록
+          {formatDate(decision.createdAt) !== formatDate(decision.updatedAt) &&
+            ` · ${formatDate(decision.updatedAt)} 수정`}
+        </p>
       </header>
 
       <CandidateCompare decision={decision} />

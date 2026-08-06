@@ -45,3 +45,61 @@ export function isFutureDate(value: string, today: string): boolean {
 export function todayString(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+/* ────────────────────────────────────────────────────────────
+   저장된 날짜가 두 종류다
+
+     purchasedAt        '2026-01-12'                  사용자가 고른 날짜
+     createdAt          '2026-01-10T09:00:00.000Z'    ISO 세계표준시
+     review.updatedAt   '2026-01-26T09:00:00.000Z'    같음
+
+   ISO를 그냥 앞 10자만 자르면 세계표준시 기준 날짜가 나온다.
+   한국에서 새벽 1시에 쓴 평가는 UTC로 전날 16시라 하루 전으로 표시된다.
+   사용자가 보는 것은 자기 시계이므로 로컬 날짜로 바꿔야 한다.
+   ──────────────────────────────────────────────────────────── */
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+/**
+ * 어떤 형태로 저장됐든 'YYYY-MM-DD'(로컬 기준)로 통일한다.
+ *
+ * 길이로 구분한다 — 'YYYY-MM-DD'는 정확히 10자이고, ISO는 그보다 길다.
+ * 짧으면 이미 날짜만 있는 값이라 시간대 변환이 필요 없다.
+ */
+export function toDateOnly(value: string): string {
+  if (value.length <= 10) return value;
+
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/**
+ * 두 날짜 사이의 일수. 시각은 무시하고 날짜만 센다.
+ *
+ * Date.UTC로 자정 기준을 만들어 빼는 이유:
+ * 그냥 new Date(a) - new Date(b) 로 하면 서머타임이 걸친 구간에서
+ * 하루가 23시간이나 25시간이 되어 결과가 하루 어긋난다.
+ * 날짜만 뽑아 UTC 자정으로 맞추면 그 문제가 사라진다.
+ *
+ * 잘못된 값이면 null. 화면은 그때 아무것도 그리지 않는다.
+ */
+export function daysBetween(from: string, to: string): number | null {
+  const a = toUtcMidnight(from);
+  const b = toUtcMidnight(to);
+
+  if (a === null || b === null) return null;
+
+  return Math.round((b - a) / 86_400_000);
+}
+
+function toUtcMidnight(value: string): number | null {
+  const dateOnly = toDateOnly(value);
+  if (!isValidDateOnly(dateOnly)) return null;
+
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  return Date.UTC(year, month - 1, day);
+}
