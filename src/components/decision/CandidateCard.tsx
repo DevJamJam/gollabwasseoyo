@@ -15,23 +15,25 @@ import type { Candidate, PurchasedItem, Rating } from '@/lib/types';
 /**
  * 후보 비교 카드.
  *
- * ── 모든 카드가 같은 행 구조를 유지한다 ──
- * 값이 없다고 그 줄을 없애면 카드마다 높이가 달라져 가로로 비교할 수 없다.
- * A의 세 번째 줄과 B의 세 번째 줄이 다른 항목이 되어버린다.
- * 그래서 빈 값은 줄을 지우지 않고 `-`를 그린다.
+ * ── 줄을 맞추는 진짜 방법 ──
+ * 처음에는 '모든 카드가 같은 항목을 갖게' 하면 줄이 맞을 줄 알았다. 틀렸다.
+ * 항목이 같아도 내용 줄 수가 다르면(기대되는 점이 1개인 카드와 2개인 카드)
+ * 그 아래가 전부 밀린다. 같은 '구조'와 같은 '높이'는 다른 얘기였다.
+ *
+ * 그래서 카드들이 **하나의 격자를 공유**하게 만든다(CSS subgrid).
+ * 부모가 줄을 정의하고 각 카드가 그 줄을 그대로 쓰면,
+ * 한 줄의 높이는 그 줄에서 가장 큰 칸에 맞춰진다.
+ *
+ * 그러려면 이 카드의 자식들이 모두 **격자의 직접 자식**이어야 한다.
+ * <dl>로 감싸면 그 <dl> 하나가 한 칸을 차지해 안쪽 줄은 다시 어긋난다.
+ * 그래서 줄들을 평평하게 나열한다.
  *
  * ── 기대와 실제를 한 카드에 둔다 ──
  * 이 앱이 하려는 일은 '구매 전 기대'와 '사용 후 실제'를 잇는 것이다.
- * 둘을 다른 영역에 떼어놓으면 스크롤해 오가며 기억해야 하고,
- * 그러면 핵심 가치가 화면 구조 때문에 약해진다.
+ * 둘을 다른 영역에 떼어놓으면 스크롤해 오가며 기억해야 한다.
  *
- *   기대되는 점  고소함, 배송 빠름     ← 사기 전에 쓴 것
- *   사용 후 평가  ★★★★☆ 재구매 있음    ← 써보고 쓴 것
- *
- * 아래쪽 구매·평가 영역은 남긴다. 거기는 **조작**(수정·삭제)을 맡는다.
- *
- * 상품 이미지는 쓰지 않는다. 이미지가 있으면 눈이 그쪽으로 가고,
- * 정작 비교해야 할 숫자를 안 보게 된다.
+ * 상품 이미지는 쓰지 않는다. 눈이 그쪽으로 가고 정작 비교해야 할 숫자를
+ * 안 보게 된다.
  */
 
 interface Props {
@@ -46,9 +48,7 @@ interface Props {
   purchasedAt?: string;
   /**
    * 구매·평가 줄을 그릴지.
-   *
-   * 아직 아무것도 안 산 고민이면 모든 카드가 `-`뿐이라 줄만 늘어난다.
-   * 주문이 없으면 전부 함께 숨긴다 — 전부 숨기므로 정렬은 그대로다.
+   * 주문이 없으면 모든 카드가 `-`뿐이라 줄만 늘어난다. 전부 함께 숨긴다.
    */
   showPurchaseRows: boolean;
   /** 상세 줄을 펼칠지. **부모가 들고 있다.** */
@@ -60,7 +60,12 @@ const FAMILIARITY_LABEL = {
   used: '사용해본 상품',
 } as const;
 
-/** 라벨 + 값 한 줄. 값이 없으면 `-`. */
+/**
+ * 라벨 + 값 한 줄. 값이 없으면 `-`.
+ *
+ * 이 div 하나가 격자의 한 줄을 차지한다.
+ * 안쪽의 라벨 너비를 5.5rem으로 고정해 카드끼리 값의 시작점이 같아진다.
+ */
 function Row({
   label,
   children,
@@ -76,10 +81,10 @@ function Row({
 
   return (
     <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-2 border-t border-slate-100 py-2 text-sm">
-      <dt className="text-slate-400">{label}</dt>
-      <dd className={empty ? 'text-slate-300' : 'text-slate-700'}>
+      <span className="text-slate-400">{label}</span>
+      <span className={empty ? 'text-slate-300' : 'text-slate-700'}>
         {empty ? '-' : children}
-      </dd>
+      </span>
     </div>
   );
 }
@@ -116,13 +121,14 @@ export function CandidateCard({
   const daysToReview =
     purchasedAt && review ? daysBetween(purchasedAt, review.updatedAt) : null;
 
-  // 구매한 후보와 아닌 것의 대비를 확실히 한다.
-  // 강조에 ring을 쓰는 이유: ring은 레이아웃에 영향을 주지 않는다.
-  // border 두께를 바꾸면 그 카드만 밀려서 줄이 어긋난다.
   return (
     <article
       className={[
-        'flex flex-col rounded-lg border p-4',
+        'rounded-lg border p-4',
+        // 좁은 화면에서는 세로로 쌓이므로 줄을 맞출 필요가 없다.
+        'flex flex-col',
+        // 나란히 놓이는 폭에서만 부모의 격자를 그대로 물려받는다.
+        'lg:grid lg:row-[1/-1] lg:[grid-template-rows:subgrid]',
         purchased
           ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-200'
           : 'border-slate-300 bg-white',
@@ -144,10 +150,7 @@ export function CandidateCard({
         {candidate.name}
       </h3>
 
-      {/*
-        비교 가격과 단위 가격은 카드에서 가장 자주 보는 값이라 위로 올린다.
-        나머지는 아래 표에서 줄을 맞춰 비교한다.
-      */}
+      {/* 비교 가격과 단위 가격은 가장 자주 보는 값이라 위로 올린다 */}
       <p className="mt-1 text-lg font-bold tracking-tight text-slate-900">
         {formatKRW(candidate.comparePrice)}
       </p>
@@ -155,121 +158,118 @@ export function CandidateCard({
         {formatUnitPrice(unitPrice)}
       </p>
 
-      <dl className="mt-3">
-        <Row label="브랜드">{candidate.brand}</Row>
-        <Row label="옵션·모델">{candidate.option}</Row>
-        <Row label="구성량">
-          {candidate.amount ? formatAmount(candidate.amount) : undefined}
-        </Row>
-        <Row label="사용 경험">
-          {candidate.familiarity && FAMILIARITY_LABEL[candidate.familiarity]}
-        </Row>
-        <Row label="배송 조건">{candidate.shippingNote}</Row>
-        <Row label="기대되는 점">
-          {candidate.pros.length > 0 && (
-            <ul className="flex flex-col gap-0.5">
-              {candidate.pros.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
+      <Row label="브랜드">{candidate.brand}</Row>
+      <Row label="옵션·모델">{candidate.option}</Row>
+      <Row label="구성량">
+        {candidate.amount ? formatAmount(candidate.amount) : undefined}
+      </Row>
+      <Row label="사용 경험">
+        {candidate.familiarity && FAMILIARITY_LABEL[candidate.familiarity]}
+      </Row>
+      <Row label="배송 조건">{candidate.shippingNote}</Row>
+      <Row label="기대되는 점">
+        {candidate.pros.length > 0 && (
+          <span className="flex flex-col gap-0.5">
+            {candidate.pros.map((p) => (
+              <span key={p}>{p}</span>
+            ))}
+          </span>
+        )}
+      </Row>
+      <Row label="걱정되는 점">
+        {candidate.cons.length > 0 && (
+          <span className="flex flex-col gap-0.5">
+            {candidate.cons.map((c) => (
+              <span key={c}>{c}</span>
+            ))}
+          </span>
+        )}
+      </Row>
+
+      {/* 산 뒤의 기록. 주문이 있는 고민에서만 그린다 */}
+      {showPurchaseRows && (
+        <Row label="실제 구매">
+          {purchase && (
+            <span className="flex flex-col gap-0.5">
+              {purchasedAt && (
+                <span className="text-slate-500">{formatDate(purchasedAt)}</span>
+              )}
+              <span className="font-medium">
+                {formatKRW(purchase.unitPrice)} × {purchase.quantity}개
+              </span>
+              {totalAmount && (
+                <span className="text-slate-500">
+                  총 {formatAmount(totalAmount)}
+                </span>
+              )}
+            </span>
           )}
         </Row>
-        <Row label="걱정되는 점">
-          {candidate.cons.length > 0 && (
-            <ul className="flex flex-col gap-0.5">
-              {candidate.cons.map((c) => (
-                <li key={c}>{c}</li>
-              ))}
-            </ul>
+      )}
+
+      {showPurchaseRows && (
+        <Row label="사용 후 평가">
+          {review && (
+            <span className="flex flex-col gap-0.5">
+              <span>
+                <Stars rating={review.rating} />
+                <span className="ml-1.5 text-slate-500">
+                  재구매 {REPURCHASE_LABEL[review.repurchase]}
+                </span>
+              </span>
+              <span className="break-words">{review.oneLine}</span>
+              <span className="text-xs text-slate-400">
+                {formatDate(review.updatedAt)} 평가
+                {daysToReview !== null && ` · 구매 후 ${daysToReview}일`}
+              </span>
+            </span>
           )}
         </Row>
+      )}
 
-        {/* 산 뒤의 기록. 주문이 있는 고민에서만 그린다 */}
-        {showPurchaseRows && (
-          <>
-            <Row label="실제 구매">
-              {purchase && (
-                <div className="flex flex-col gap-0.5">
-                  {purchasedAt && (
-                    <span className="text-slate-500">
-                      {formatDate(purchasedAt)}
-                    </span>
-                  )}
-                  <span className="font-medium">
-                    {formatKRW(purchase.unitPrice)} × {purchase.quantity}개
-                  </span>
-                  {totalAmount && (
-                    <span className="text-slate-500">
-                      총 {formatAmount(totalAmount)}
-                    </span>
-                  )}
-                </div>
-              )}
-            </Row>
+      {expanded && <Row label="구매처">{candidate.seller}</Row>}
+      {expanded && (
+        <Row label="상품 링크">
+          {candidate.link && (
+            <a
+              href={candidate.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-all text-blue-700 underline underline-offset-2"
+            >
+              {candidate.link}
+              <span className="sr-only"> (새 창에서 열림)</span>
+            </a>
+          )}
+        </Row>
+      )}
+      {expanded && <Row label="메모">{candidate.memo}</Row>}
 
-            <Row label="사용 후 평가">
-              {review && (
-                <div className="flex flex-col gap-0.5">
-                  <span>
-                    <Stars rating={review.rating} />
-                    <span className="ml-1.5 text-slate-500">
-                      재구매 {REPURCHASE_LABEL[review.repurchase]}
-                    </span>
-                  </span>
-                  <span className="break-words">{review.oneLine}</span>
-                  <span className="text-xs text-slate-400">
-                    {formatDate(review.updatedAt)} 평가
-                    {daysToReview !== null && ` · 구매 후 ${daysToReview}일`}
-                  </span>
-                </div>
-              )}
-            </Row>
-          </>
-        )}
-
-        {expanded && (
-          <>
-            <Row label="구매처">{candidate.seller}</Row>
-            <Row label="상품 링크">
-              {candidate.link && (
-                <a
-                  href={candidate.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="break-all text-blue-700 underline underline-offset-2"
-                >
-                  {candidate.link}
-                  <span className="sr-only"> (새 창에서 열림)</span>
-                </a>
-              )}
-            </Row>
-            <Row label="메모">{candidate.memo}</Row>
-            {showPurchaseRows && (
-              <>
-                <Row label="만족한 점">
-                  {review && review.goods.length > 0 && (
-                    <ul className="flex flex-col gap-0.5">
-                      {review.goods.map((g) => (
-                        <li key={g}>{g}</li>
-                      ))}
-                    </ul>
-                  )}
-                </Row>
-                <Row label="아쉬운 점">
-                  {review && review.bads.length > 0 && (
-                    <ul className="flex flex-col gap-0.5">
-                      {review.bads.map((b) => (
-                        <li key={b}>{b}</li>
-                      ))}
-                    </ul>
-                  )}
-                </Row>
-                <Row label="다음엔">{review?.nextChange}</Row>
-              </>
-            )}
-          </>
-        )}
-      </dl>
+      {expanded && showPurchaseRows && (
+        <Row label="만족한 점">
+          {review && review.goods.length > 0 && (
+            <span className="flex flex-col gap-0.5">
+              {review.goods.map((g) => (
+                <span key={g}>{g}</span>
+              ))}
+            </span>
+          )}
+        </Row>
+      )}
+      {expanded && showPurchaseRows && (
+        <Row label="아쉬운 점">
+          {review && review.bads.length > 0 && (
+            <span className="flex flex-col gap-0.5">
+              {review.bads.map((b) => (
+                <span key={b}>{b}</span>
+              ))}
+            </span>
+          )}
+        </Row>
+      )}
+      {expanded && showPurchaseRows && (
+        <Row label="다음엔">{review?.nextChange}</Row>
+      )}
     </article>
   );
 }
