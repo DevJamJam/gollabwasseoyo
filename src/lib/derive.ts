@@ -157,6 +157,19 @@ export function isPurchased(d: Decision, candidateId: string): boolean {
   return d.order?.items.some((it) => it.candidateId === candidateId) ?? false;
 }
 
+/**
+ * 그 후보의 구매 기록. 안 샀으면 undefined.
+ *
+ * 한 주문에 같은 후보가 두 번 들어올 수 없으므로(규칙 P-2)
+ * find로 하나만 찾으면 된다.
+ */
+export function getPurchasedItem(
+  d: Decision,
+  candidateId: string,
+): PurchasedItem | undefined {
+  return d.order?.items.find((it) => it.candidateId === candidateId);
+}
+
 export function getUnselectedCandidates(d: Decision): Candidate[] {
   if (!d.order) return d.candidates;
 

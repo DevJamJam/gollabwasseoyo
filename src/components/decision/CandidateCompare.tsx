@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { CandidateCard } from '@/components/decision/CandidateCard';
-import { isPurchased } from '@/lib/derive';
+import { getPurchasedItem } from '@/lib/derive';
 import type { Decision } from '@/lib/types';
 
 /**
@@ -54,7 +54,11 @@ export function CandidateCompare({ decision }: { decision: Decision }) {
             key={c.id}
             index={i}
             candidate={c}
-            purchased={isPurchased(decision, c.id)}
+            purchase={getPurchasedItem(decision, c.id)}
+            purchasedAt={decision.order?.purchasedAt}
+            // 주문이 없으면 모든 카드가 `-`뿐이라 줄만 늘어난다.
+            // 전부 함께 숨기므로 정렬은 그대로다.
+            showPurchaseRows={decision.order !== null}
             expanded={expanded}
           />
         ))}

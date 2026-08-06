@@ -5,6 +5,7 @@ import {
   countByStatus,
   filterDecisions,
   getLockedCandidateIds,
+  getPurchasedItem,
   getReviewProgress,
   getStatus,
   getTagsByCategory,
@@ -416,5 +417,39 @@ describe('canDeleteCandidate / getLockedCandidateIds', () => {
 
     expect(canDeleteCandidate(draft, locked, 'c1')).toBe(false); // 여전히 구매됨
     expect(canDeleteCandidate(draft, locked, 'c2')).toBe(true); // 새 후보는 가능
+  });
+});
+
+/* ══════════════════════════════════════════════════════════
+   블록 26 — 후보의 구매 기록 찾기
+   ══════════════════════════════════════════════════════════ */
+
+describe('getPurchasedItem', () => {
+  const bought = makeDecision({
+    candidates: [makeCandidate({ id: 'c1' }), makeCandidate({ id: 'c2' })],
+    order: {
+      purchasedAt: '2026-01-12',
+      totalPaid: 47000,
+      reason: '테스트',
+      items: [
+        { candidateId: 'c1', unitPrice: 18000, quantity: 1, review: null },
+      ],
+    },
+  });
+
+  it('산 후보의 구매 기록을 돌려준다', () => {
+    expect(getPurchasedItem(bought, 'c1')?.unitPrice).toBe(18000);
+  });
+
+  it('안 산 후보는 undefined다', () => {
+    expect(getPurchasedItem(bought, 'c2')).toBeUndefined();
+  });
+
+  it('주문이 없으면 undefined다', () => {
+    expect(getPurchasedItem(makeDecision(), 'c1')).toBeUndefined();
+  });
+
+  it('없는 후보 id도 undefined다', () => {
+    expect(getPurchasedItem(bought, 'ghost')).toBeUndefined();
   });
 });
