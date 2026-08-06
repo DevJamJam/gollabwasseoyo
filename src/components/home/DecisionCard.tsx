@@ -40,7 +40,7 @@ export function DecisionCard({ decision }: { decision: Decision }) {
   return (
     <Link
       href={`/decisions/${decision.id}`}
-      className="flex flex-col rounded-lg border border-slate-200 p-4 transition-colors hover:border-slate-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+      className="flex flex-col rounded-lg border border-slate-300 bg-white p-4 transition-colors hover:border-slate-500 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
     >
       <div className="flex items-start justify-between gap-2">
         <Badge>{CATEGORY_LABEL[decision.category]}</Badge>

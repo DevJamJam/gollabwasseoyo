@@ -69,17 +69,27 @@ export function CandidateCard({
 }: Props) {
   const unitPrice = getUnitPrice(candidate.comparePrice, candidate.amount);
 
+  // 구매한 후보와 아닌 것의 대비를 확실히 한다.
+  // 테두리가 흐릿하면 카드가 몇 개인지도 한눈에 안 들어온다.
+  //
+  // 강조에 ring을 쓰는 이유: ring은 레이아웃에 영향을 주지 않는다.
+  // border 두께를 바꾸면 그 카드만 2px씩 밀려서 줄이 어긋난다.
   return (
     <article
       className={[
         'flex flex-col rounded-lg border p-4',
         purchased
-          ? 'border-blue-400 bg-blue-50/40 ring-1 ring-blue-200'
-          : 'border-slate-200',
+          ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-200'
+          : 'border-slate-300 bg-white',
       ].join(' ')}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+      <div className="flex min-h-6 items-start justify-between gap-2">
+        <span
+          className={[
+            'flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
+            purchased ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600',
+          ].join(' ')}
+        >
           {index + 1}
         </span>
         {purchased && <Badge tone="blue">구매함</Badge>}

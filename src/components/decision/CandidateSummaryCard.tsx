@@ -39,7 +39,7 @@ export function CandidateSummaryCard({
   const unitPrice = getUnitPrice(candidate.comparePrice, candidate.amount);
 
   return (
-    <li className="rounded-lg border border-slate-200 p-4">
+    <li className="rounded-lg border border-slate-300 bg-white p-4">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
           {index + 1}
@@ -79,22 +79,21 @@ export function CandidateSummaryCard({
           )}
         </div>
 
-        <div className="flex shrink-0 gap-1">
-          <Button size="sm" variant="ghost" onClick={onEdit}>
+        <div className="flex shrink-0 gap-1.5">
+          <Button size="sm" onClick={onEdit}>
             수정
           </Button>
           {/*
             지울 수 없을 때 버튼을 숨기지 않는다.
             없어진 버튼은 사용자가 '왜 없지'를 물을 수도 없다.
-            비활성으로 두고 이유를 title로 알려준다.
+            비활성으로 두고 이유를 카드 아래에 적는다.
           */}
           <Button
             size="sm"
-            variant="ghost"
+            variant="dangerOutline"
             disabled={!deletable}
             title={deletable ? undefined : undeletableReason}
             onClick={onDelete}
-            className={deletable ? 'text-red-600 hover:bg-red-50' : undefined}
           >
             삭제
           </Button>
@@ -102,7 +101,9 @@ export function CandidateSummaryCard({
       </div>
 
       {!deletable && undeletableReason && (
-        <p className="mt-2 pl-9 text-xs text-slate-400">{undeletableReason}</p>
+        <p className="mt-2.5 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
+          {undeletableReason}
+        </p>
       )}
     </li>
   );

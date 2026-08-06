@@ -118,8 +118,7 @@ export function DecisionDetailView({ id }: { id: string }) {
             </Link>
             <Button
               size="sm"
-              variant="ghost"
-              className="text-red-600 hover:bg-red-50"
+              variant="dangerOutline"
               onClick={() => setConfirmingDelete(true)}
             >
               삭제

@@ -290,8 +290,7 @@ export function HomeView({ filters }: { filters: Filters }) {
           </p>
           <Button
             size="sm"
-            variant="ghost"
-            className="text-red-600 hover:bg-red-50"
+            variant="dangerOutline"
             onClick={() => {
               // Day 4에 ConfirmDialog로 바꾼다. 지금은 확인 없이 지우지 않게만 막아둔다.
               if (window.confirm('저장된 기록을 모두 삭제할까요? 되돌릴 수 없습니다.')) {
