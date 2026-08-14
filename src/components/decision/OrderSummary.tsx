@@ -13,7 +13,7 @@ import type { Decision, Order } from '@/lib/types';
  * 이유를 접어두면 3개월 뒤에 펼쳐볼 일이 없고, 그러면 적을 이유도 없어진다.
  *
  * 평가 영역은 여기 두지 않는다. 평가는 상품 하나하나에 붙는 것이라
- * 주문 요약이 아니라 별도 영역이 맡는다(Day 6).
+ * 주문 요약이 아니라 ReviewSection이 맡는다.
  */
 
 interface Props {
