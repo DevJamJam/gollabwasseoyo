@@ -12,8 +12,11 @@ export default defineConfig({
   },
   test: {
     // 기본 환경은 node — 브라우저 API가 필요 없는 순수 함수 테스트가 대부분이다.
-    // window.localStorage를 쓰는 tests/storage.test.ts만 파일 상단 주석으로
+    // 브라우저가 필요한 파일(storage.test.ts · *-ui.test.tsx)만 상단 주석으로
     // @vitest-environment jsdom 을 지정한다.
     environment: 'node',
+
+    // jest-dom 매처 등록. 파일마다 import하지 않기 위해 여기 둔다.
+    setupFiles: ['./tests/setup.ts'],
   },
 });
