@@ -9,6 +9,7 @@ import { DecisionCard } from '@/components/home/DecisionCard';
 import { STATUS_TONE } from '@/components/statusTone';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HomeSkeleton } from '@/components/ui/Skeleton';
 import { toneForTag } from '@/components/ui/tone';
@@ -31,7 +32,7 @@ export function HomeView({ filters }: { filters: Filters }) {
   const { ready, decisions, seedSample, resetAll } = useDecisions();
 
   /**
-   * 검색 입력창의 문자열. **아직 적용되지 않은 값**이다.
+   * 검색 입력창의 문자열. 아직 적용되지 않은 값이다.
    * 적용된 필터는 URL(props.filters)에만 있다.
    * 이 구분이 명확하면 동기화에 조건이 필요 없어진다.
    */
@@ -50,6 +51,10 @@ export function HomeView({ filters }: { filters: Filters }) {
     setLastAppliedQuery(filters.q);
     setQueryText(filters.q ?? '');
   }
+
+  /** 전체 초기화 확인. 이 앱에서 한 번에 제일 많이 잃는 동작이다. */
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const [resetError, setResetError] = useState<string>();
 
   /**
    * Server 응답이 오기 전까지의 최신 사용자 의도.
@@ -117,6 +122,35 @@ export function HomeView({ filters }: { filters: Filters }) {
     : [];
 
   const hasAnyRecord = decisions.length > 0;
+
+  // 무엇이 함께 사라지는지 확인 문구에 적기 위해 센다.
+  // 고민을 지울 때와 같은 기준이다 — 개수를 말해주지 않으면
+  // '기록 전부'가 얼마나 되는지 사용자가 알 방법이 없다.
+  const totalCandidates = decisions.reduce((n, d) => n + d.candidates.length, 0);
+  const totalReviews = decisions.reduce(
+    (n, d) =>
+      n + (d.order?.items.filter((it) => it.review !== null).length ?? 0),
+    0,
+  );
+
+  function handleReset(): void {
+    setResetError(undefined);
+
+    const result = resetAll();
+
+    if (!result.ok) {
+      // 실패하면 닫지 않는다. 닫으면 지워진 줄 안다.
+      setResetError(
+        result.reason === 'quota'
+          ? '저장 공간 문제로 삭제하지 못했습니다.'
+          : '이 브라우저에서는 기록을 변경할 수 없습니다.',
+      );
+      return;
+    }
+
+    setConfirmingReset(false);
+  }
+
   const hasFilter = Boolean(
     filters.status || filters.category || filters.tag || filters.q,
   );
@@ -291,17 +325,34 @@ export function HomeView({ filters }: { filters: Filters }) {
           <Button
             size="sm"
             variant="dangerOutline"
-            onClick={() => {
-              // Day 4에 ConfirmDialog로 바꾼다. 지금은 확인 없이 지우지 않게만 막아둔다.
-              if (window.confirm('저장된 기록을 모두 삭제할까요? 되돌릴 수 없습니다.')) {
-                resetAll();
-              }
-            }}
+            onClick={() => setConfirmingReset(true)}
           >
             전체 초기화
           </Button>
         </section>
       )}
+
+      <ConfirmDialog
+        open={confirmingReset}
+        title="저장된 기록을 모두 지울까요?"
+        confirmLabel="전체 초기화"
+        error={resetError}
+        description={
+          <>
+            <strong className="text-red-700">
+              고민 {decisions.length}개, 후보 {totalCandidates}개
+              {totalReviews > 0 && `, 평가 ${totalReviews}개`}가 사라집니다.
+            </strong>
+            <br />
+            이 브라우저에만 저장된 기록이라 다른 곳에 남아 있는 사본이 없습니다.
+          </>
+        }
+        onConfirm={handleReset}
+        onCancel={() => {
+          setConfirmingReset(false);
+          setResetError(undefined);
+        }}
+      />
     </div>
   );
 }
