@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { CandidateCompare } from '@/components/decision/CandidateCompare';
 import { OrderSummary } from '@/components/decision/OrderSummary';
 import { PurchasePanel } from '@/components/decision/PurchasePanel';
+import { ReviewSection } from '@/components/decision/ReviewSection';
 import { STATUS_TONE } from '@/components/statusTone';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -217,16 +218,12 @@ export function DecisionDetailView({ id }: { id: string }) {
         />
       )}
 
-      {/* 평가 영역은 다음 단계에서 채운다 */}
+      {/*
+        평가는 구매가 있을 때만 존재한다.
+        구매 패널이 열려 있는 동안에는 감춘다 — 지금 고치는 것 하나만 보이게 한다.
+      */}
       {decision.order !== null && !editingPurchase && (
-        <section className="rounded-lg border border-dashed border-slate-300 px-5 py-6 text-center">
-          <p className="text-sm text-slate-500">
-            상품 평가 {progress.done}/{progress.total}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">
-            평가 작성 화면은 다음 단계에서 만듭니다.
-          </p>
-        </section>
+        <ReviewSection decision={decision} />
       )}
 
       <div>

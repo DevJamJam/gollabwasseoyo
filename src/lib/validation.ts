@@ -16,6 +16,7 @@ import type {
   CandidateFormValues,
   DecisionFormValues,
   PurchaseFormValues,
+  ReviewFormValues,
 } from './types';
 
 /** 필드 이름 → 오류 메시지. 한 필드에 메시지는 하나만 붙는다. */
@@ -323,6 +324,57 @@ export function firstPurchaseErrorField(
 }
 
 /* ────────────────────────────────────────────────────────────
+   평가 폼 (규칙 E-1 ~ E-4)
+
+   구매 폼과 달리 배열 필드가 없어서 Errors<T>로 충분하다.
+   goods·bads는 배열이지만 **한 덩어리로 판정**한다 —
+   "만족한 점은 최대 3개" 같은 메시지에 몇 번째인지가 필요 없기 때문이다.
+   구매 폼의 items는 각 행이 독립된 상품이라 사정이 달랐다.
+   ──────────────────────────────────────────────────────────── */
+
+export function validateReviewForm(
+  v: ReviewFormValues,
+): Errors<ReviewFormValues> {
+  const e: Errors<ReviewFormValues> = {};
+
+  // 폼 타입이 Rating | null 이라 이 검사가 의미를 갖는다.
+  // 별점은 기본값을 두지 않는다 — 3점을 미리 찍어두면
+  // '보통'이라고 답한 것인지 안 고른 것인지 구분할 수 없다.
+  if (v.rating === null) e.rating = '별점을 선택해 주세요.';
+
+  if (v.repurchase === '') e.repurchase = '재구매 의사를 선택해 주세요.';
+
+  const oneLine = v.oneLine.trim();
+  if (oneLine === '') {
+    e.oneLine = '한 줄 후기를 입력해 주세요.';
+  } else if (oneLine.length > 100) {
+    e.oneLine = '한 줄 후기는 100자 이내로 입력해 주세요.';
+  }
+
+  // 개수와 길이를 else if로 잇는다 — 후보 폼과 같은 이유다.
+  // 한 필드에 메시지는 하나뿐이라 따로 쓰면 나중 것이 앞을 덮는다.
+  const goods = normalizedList(v.goods);
+  if (goods.length > 3) {
+    e.goods = '만족한 점은 최대 3개까지 입력할 수 있습니다.';
+  } else if (goods.some((item) => item.length > 30)) {
+    e.goods = '만족한 점은 항목당 30자 이내로 입력해 주세요.';
+  }
+
+  const bads = normalizedList(v.bads);
+  if (bads.length > 3) {
+    e.bads = '아쉬운 점은 최대 3개까지 입력할 수 있습니다.';
+  } else if (bads.some((item) => item.length > 30)) {
+    e.bads = '아쉬운 점은 항목당 30자 이내로 입력해 주세요.';
+  }
+
+  if (v.nextChange.trim().length > 100) {
+    e.nextChange = '다음에 바꿀 점은 100자 이내로 입력해 주세요.';
+  }
+
+  return e;
+}
+
+/* ────────────────────────────────────────────────────────────
    후보 개수 (규칙 D-3)
    ──────────────────────────────────────────────────────────── */
 
@@ -374,6 +426,15 @@ export const CANDIDATE_FIELD_ORDER = [
   'cons',
   'memo',
 ] as const satisfies readonly (keyof CandidateFormValues)[];
+
+export const REVIEW_FIELD_ORDER = [
+  'rating',
+  'repurchase',
+  'oneLine',
+  'goods',
+  'bads',
+  'nextChange',
+] as const satisfies readonly (keyof ReviewFormValues)[];
 
 /** 오류가 있는 첫 필드의 이름. 없으면 undefined. */
 export function firstErrorField<T>(

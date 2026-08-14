@@ -31,6 +31,11 @@ import type {
   OrderInput,
   PurchaseFormValues,
   PurchasedItemFormValues,
+  Rating,
+  Repurchase,
+  Review,
+  ReviewFormValues,
+  ReviewInput,
 } from './types';
 
 export function toDecisionInput(
@@ -88,6 +93,27 @@ export function toOrderInput(form: PurchaseFormValues): OrderInput {
         quantity: requiredInt(it.quantity),
         amount: optionalAmount(it.amountValue, it.amountUnit),
       })),
+  };
+}
+
+/**
+ * 평가 폼 → 평가 입력.
+ *
+ * `as`가 두 개 있다. rating은 `Rating | null`, repurchase는 `Repurchase | ''`인데
+ * 검증이 둘 다 막았으므로 여기서는 값이 있다. 파일 상단의 타협과 같은 이유다.
+ *
+ * oneLine을 반드시 trim한다. checkReviewInvariants가
+ * `input.oneLine !== oneLine`이면 거부하기 때문이다 — 앞뒤 공백이 붙은 채로
+ * 오면 저장이 조용히 실패한다.
+ */
+export function toReviewInput(form: ReviewFormValues): ReviewInput {
+  return {
+    rating: form.rating as Rating, // 검증 통과 후이므로 null 아님
+    repurchase: form.repurchase as Repurchase, // 검증 통과 후이므로 '' 아님
+    oneLine: requiredText(form.oneLine),
+    goods: normalizeTextList(form.goods),
+    bads: normalizeTextList(form.bads),
+    nextChange: optionalText(form.nextChange),
   };
 }
 
@@ -166,6 +192,23 @@ export function toPurchaseForm(d: Decision, today: string): PurchaseFormValues {
     seller: d.order?.seller ?? '',
     reason: d.order?.reason ?? '',
     items,
+  };
+}
+
+/**
+ * 저장된 평가 → 수정 폼.
+ *
+ * `updatedAt`은 되돌리지 않는다. 폼에 없는 값이고, 다시 저장할 때
+ * Provider가 새로 찍는다. 사용자가 만질 수 있는 것만 폼에 담는다.
+ */
+export function toReviewForm(r: Review): ReviewFormValues {
+  return {
+    rating: r.rating,
+    repurchase: r.repurchase,
+    oneLine: r.oneLine,
+    goods: [...r.goods],
+    bads: [...r.bads],
+    nextChange: r.nextChange ?? '',
   };
 }
 

@@ -228,7 +228,8 @@ describe('블록 38 — 저장하면 배지가 따라 바뀐다', () => {
 
     // 배지는 저장된 값이 아니라 데이터에서 계산된다
     expect(screen.getByText('구매 완료 0/1')).toBeInTheDocument();
-    expect(screen.getByText('상품 평가 0/1')).toBeInTheDocument();
+    // 평가 영역이 함께 나타난다 (내용은 review-ui.test.tsx가 본다)
+    expect(screen.getByText('0/1 작성')).toBeInTheDocument();
     expect(storedDecision().order?.totalPaid).toBe(18000);
   });
 });
