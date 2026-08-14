@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { CandidateCompare } from '@/components/decision/CandidateCompare';
+import { OrderSummary } from '@/components/decision/OrderSummary';
+import { PurchasePanel } from '@/components/decision/PurchasePanel';
 import { STATUS_TONE } from '@/components/statusTone';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -32,10 +34,14 @@ import { useDecisions } from '@/store/useDecisions';
  */
 export function DecisionDetailView({ id }: { id: string }) {
   const router = useRouter();
-  const { ready, getById, removeDecision } = useDecisions();
+  const { ready, getById, removeDecision, cancelOrder } = useDecisions();
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string>();
+
+  const [editingPurchase, setEditingPurchase] = useState(false);
+  const [confirmingCancelOrder, setConfirmingCancelOrder] = useState(false);
+  const [cancelOrderError, setCancelOrderError] = useState<string>();
 
   // ① 아직 저장소를 읽지 않았다
   if (!ready) {
@@ -103,6 +109,32 @@ export function DecisionDetailView({ id }: { id: string }) {
     router.replace('/');
   }
 
+  /**
+   * 구매 기록 취소.
+   *
+   * order = null 한 줄이라 구매 상품·주문 정보·평가가 함께 사라진다.
+   * 그 '함께'가 사용자에게는 안 보이므로 확인 문구가 대신 말해준다.
+   */
+  function handleCancelOrder(): void {
+    setCancelOrderError(undefined);
+
+    const result = cancelOrder(id);
+
+    if (!result.ok) {
+      // 실패하면 다이얼로그를 닫지 않는다. 닫으면 취소된 줄 안다.
+      setCancelOrderError(
+        result.reason === 'not_found'
+          ? '취소할 구매 기록을 찾을 수 없습니다.'
+          : result.reason === 'quota'
+            ? '저장 공간이 부족해 취소하지 못했습니다.'
+            : '이 브라우저에서는 기록을 변경할 수 없습니다.',
+      );
+      return;
+    }
+
+    setConfirmingCancelOrder(false);
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3">
@@ -149,13 +181,53 @@ export function DecisionDetailView({ id }: { id: string }) {
 
       <CandidateCompare decision={decision} />
 
-      {/* 구매·평가 영역은 다음 단계에서 채운다 */}
-      <section className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center">
-        <p className="text-sm text-slate-500">아직 구매하지 않았습니다.</p>
-        <p className="mt-1 text-xs text-slate-400">
-          구매 등록과 평가 화면은 다음 단계에서 만듭니다.
-        </p>
-      </section>
+      {/*
+        구매 영역의 세 가지 모습.
+          ① 패널을 열었다      → 등록·수정 폼
+          ② 주문이 없다        → 빈 상태 + 등록 버튼
+          ③ 주문이 있다        → 요약 + 수정·취소
+
+        editingPurchase를 먼저 보는 이유: 주문이 있든 없든 패널이 이긴다.
+        순서를 뒤집으면 '구매정보 수정'을 눌러도 요약이 계속 보인다.
+      */}
+      {editingPurchase ? (
+        <PurchasePanel
+          decision={decision}
+          onSaved={() => setEditingPurchase(false)}
+          onCancel={() => setEditingPurchase(false)}
+        />
+      ) : decision.order === null ? (
+        <section className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center">
+          <p className="text-sm text-slate-600">아직 구매하지 않았습니다.</p>
+          <p className="mt-1 text-xs text-slate-400">
+            산 다음에 실제로 낸 금액과 고른 이유를 남겨두면, 다음에 비슷한 걸
+            살 때 그대로 꺼내볼 수 있습니다.
+          </p>
+          <div className="mt-4">
+            <Button variant="primary" onClick={() => setEditingPurchase(true)}>
+              구매 등록하기
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <OrderSummary
+          decision={decision}
+          onEdit={() => setEditingPurchase(true)}
+          onCancel={() => setConfirmingCancelOrder(true)}
+        />
+      )}
+
+      {/* 평가 영역은 다음 단계에서 채운다 */}
+      {decision.order !== null && !editingPurchase && (
+        <section className="rounded-lg border border-dashed border-slate-300 px-5 py-6 text-center">
+          <p className="text-sm text-slate-500">
+            상품 평가 {progress.done}/{progress.total}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            평가 작성 화면은 다음 단계에서 만듭니다.
+          </p>
+        </section>
+      )}
 
       <div>
         <Link href="/">
@@ -194,6 +266,37 @@ export function DecisionDetailView({ id }: { id: string }) {
         onCancel={() => {
           setConfirmingDelete(false);
           setDeleteError(undefined);
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmingCancelOrder}
+        title="구매 기록을 취소할까요?"
+        confirmLabel="구매 기록 취소"
+        error={cancelOrderError}
+        description={
+          reviewCount > 0 ? (
+            <>
+              <strong className="text-red-700">
+                이 구매에 쓴 상품 평가 {reviewCount}개도 함께 삭제됩니다.
+              </strong>
+              <br />
+              후보와 고민은 그대로 남고, 상태는 &lsquo;고민 중&rsquo;으로
+              돌아갑니다.
+            </>
+          ) : (
+            <>
+              구매일·결제금액·선택한 이유가 사라지고 상태가 &lsquo;고민
+              중&rsquo;으로 돌아갑니다.
+              <br />
+              후보와 고민은 그대로 남습니다.
+            </>
+          )
+        }
+        onConfirm={handleCancelOrder}
+        onCancel={() => {
+          setConfirmingCancelOrder(false);
+          setCancelOrderError(undefined);
         }}
       />
     </div>

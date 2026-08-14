@@ -12,6 +12,7 @@ import type {
   Decision,
   DecisionStatus,
   Filters,
+  PurchaseFormValues,
   PurchasedItem,
 } from './types';
 
@@ -124,6 +125,54 @@ export function getTotalAmount(item: PurchasedItem): Amount | null {
     value: item.amount.value * item.quantity,
     unit: item.amount.unit,
   };
+}
+
+/* ────────────────────────────────────────────────────────────
+   단가 합계와 결제 차액 (규칙 P-6)
+   ──────────────────────────────────────────────────────────── */
+
+/**
+ * 단가 × 개수의 합.
+ *
+ * 이 값과 최종 결제금액이 달라도 **오류가 아니다.** 쿠폰·배송비·포인트가
+ * 붙는 게 정상이라, 둘이 같아야 한다고 강제하면 실제 영수증을 못 적는다.
+ * 대신 차액을 보여주기만 한다 — 오타로 0이 하나 빠졌을 때 눈에 띄게 하려고.
+ *
+ * 매개변수를 Order가 아니라 필요한 두 필드만 가진 모양으로 받는다.
+ * 그래야 저장된 주문(PurchasedItem)과 저장 전 입력(PurchasedItemInput)이
+ * 같은 함수를 쓴다.
+ */
+export function getSubtotal(
+  items: readonly { unitPrice: number; quantity: number }[],
+): number {
+  return items.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0);
+}
+
+/**
+ * 입력 중인 폼에서 계산한 단가 합계.
+ *
+ * 타이핑 도중에는 값이 비어 있거나 숫자가 아닐 수 있다.
+ * 그럴 때 0으로 치면 '합계 0원'이라는 거짓말을 하게 되므로 null을 돌려준다.
+ * 화면은 null이면 합계를 아예 그리지 않는다.
+ */
+export function getFormSubtotal(v: PurchaseFormValues): number | null {
+  const selected = v.items.filter((it) => it.selected);
+  if (selected.length === 0) return null;
+
+  let sum = 0;
+
+  for (const it of selected) {
+    const unitPrice = Number(it.unitPrice.trim());
+    const quantity = Number(it.quantity.trim());
+
+    // Number('')는 0이라 빈 칸이 조용히 통과한다. 먼저 막는다.
+    if (it.unitPrice.trim() === '' || it.quantity.trim() === '') return null;
+    if (!Number.isFinite(unitPrice) || !Number.isFinite(quantity)) return null;
+
+    sum += unitPrice * quantity;
+  }
+
+  return sum;
 }
 
 /* ────────────────────────────────────────────────────────────

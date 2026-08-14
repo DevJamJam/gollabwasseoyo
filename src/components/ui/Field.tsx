@@ -55,9 +55,23 @@ export function fieldHelpId(key: PropertyKey): string {
   return fieldId(key) + '-help';
 }
 
-/** 구매 폼은 상품 행마다 같은 이름의 칸이 반복되므로 candidateId까지 넣어야 유일해진다. */
+/**
+ * 구매 폼은 상품 행마다 같은 이름의 칸이 반복되므로 candidateId까지 넣어야 유일해진다.
+ *
+ * 이름과 id를 둘로 나눈 이유가 있다. <Field>와 <AmountInput>은 `name`을 받아
+ * 안에서 fieldId(name)으로 id를 만든다. 그래서 바깥에서 id를 직접 지어 넘기면
+ * 'f-'가 두 번 붙는다. 아래처럼 id를 이름으로부터 **정의**해두면
+ * "이 두 값이 같은 요소를 가리킨다"가 규칙이 아니라 코드로 보장된다.
+ *
+ *   전달할 때  name={itemFieldName(cid, 'unitPrice')}
+ *   찾을 때    document.getElementById(itemFieldId(cid, 'unitPrice'))
+ */
+export function itemFieldName(candidateId: string, key: PropertyKey): string {
+  return 'item-' + candidateId + '-' + String(key);
+}
+
 export function itemFieldId(candidateId: string, key: PropertyKey): string {
-  return 'f-item-' + candidateId + '-' + String(key);
+  return fieldId(itemFieldName(candidateId, key));
 }
 
 interface FieldProps {

@@ -28,6 +28,9 @@ import type {
   Decision,
   DecisionCreateInput,
   DecisionFormValues,
+  OrderInput,
+  PurchaseFormValues,
+  PurchasedItemFormValues,
 } from './types';
 
 export function toDecisionInput(
@@ -65,6 +68,29 @@ export function toCandidate(
   };
 }
 
+/**
+ * 구매 폼 → 주문 입력.
+ *
+ * **체크된 항목만 저장한다.** 체크 해제된 행의 입력값은 폼 배열에 그대로
+ * 남아 있지만 여기서 걸러진다. 그래서 체크를 껐다 켜도 값이 살아 있다.
+ */
+export function toOrderInput(form: PurchaseFormValues): OrderInput {
+  return {
+    purchasedAt: form.purchasedAt,
+    totalPaid: requiredInt(form.totalPaid),
+    seller: optionalText(form.seller),
+    reason: requiredText(form.reason),
+    items: form.items
+      .filter((it) => it.selected)
+      .map((it) => ({
+        candidateId: it.candidateId,
+        unitPrice: requiredInt(it.unitPrice),
+        quantity: requiredInt(it.quantity),
+        amount: optionalAmount(it.amountValue, it.amountUnit),
+      })),
+  };
+}
+
 /* ────────────────────────────────────────────────────────────
    도메인 → 폼 (수정 화면용 역변환)
 
@@ -82,6 +108,64 @@ export function toDecisionForm(d: Decision): DecisionFormValues {
     tags: [...d.tags],
     purpose: d.purpose,
     budget: d.budget === undefined ? '' : String(d.budget),
+  };
+}
+
+/**
+ * 구매 폼의 초기값.
+ *
+ * ── 행은 후보 '전체'에 대해 만든다 ──
+ * 체크된 것만 만들면 체크를 켜는 순간 행을 새로 끼워 넣어야 하고,
+ * 껐다 켜면 입력값이 사라진다. 전부 만들어 두고 selected로 제어하면
+ * 그 문제가 애초에 없다.
+ *
+ * ── 무엇을 미리 채우고 무엇을 비워두는가 ──
+ * 구성량은 후보의 값을 가져온다. 같은 상품이니 대개 그대로다.
+ * 개수는 1로 둔다.
+ *
+ * **단가는 비워둔다.** 비교 가격을 넣어두고 싶은 유혹이 있지만,
+ * 비교 가격은 '살펴볼 때 본 값'이고 단가는 '실제로 낸 값'이다.
+ * 미리 채워두면 쿠폰이나 할인으로 다르게 산 경우에도 그대로 저장되기 쉽고,
+ * 그러면 기대와 실제를 비교한다는 이 앱의 목적이 무너진다.
+ *
+ * today를 인자로 받는 이유는 이 함수를 순수하게 두기 위해서다.
+ * 안에서 new Date()를 부르면 테스트가 오늘 날짜에 따라 달라진다.
+ */
+export function toPurchaseForm(d: Decision, today: string): PurchaseFormValues {
+  const purchased = new Map(
+    (d.order?.items ?? []).map((it) => [it.candidateId, it]),
+  );
+
+  const items: PurchasedItemFormValues[] = d.candidates.map((c) => {
+    const item = purchased.get(c.id);
+
+    if (item) {
+      return {
+        candidateId: c.id,
+        selected: true,
+        unitPrice: String(item.unitPrice),
+        quantity: String(item.quantity),
+        amountValue: item.amount ? String(item.amount.value) : '',
+        amountUnit: item.amount ? item.amount.unit : '',
+      };
+    }
+
+    return {
+      candidateId: c.id,
+      selected: false,
+      unitPrice: '',
+      quantity: '1',
+      amountValue: c.amount ? String(c.amount.value) : '',
+      amountUnit: c.amount ? c.amount.unit : '',
+    };
+  });
+
+  return {
+    purchasedAt: d.order ? d.order.purchasedAt : today,
+    totalPaid: d.order ? String(d.order.totalPaid) : '',
+    seller: d.order?.seller ?? '',
+    reason: d.order?.reason ?? '',
+    items,
   };
 }
 

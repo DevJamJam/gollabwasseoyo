@@ -10,10 +10,12 @@
  * 검증의 대상은 항상 '사용자가 방금 타이핑한 문자열'이다.
  */
 
+import { isValidDateOnly } from './date';
 import type {
   Candidate,
   CandidateFormValues,
   DecisionFormValues,
+  PurchaseFormValues,
 } from './types';
 
 /** 필드 이름 → 오류 메시지. 한 필드에 메시지는 하나만 붙는다. */
@@ -158,6 +160,166 @@ export function validateCandidateForm(
 
 function normalizedList(items: string[]): string[] {
   return items.map((i) => i.trim()).filter(Boolean);
+}
+
+/* ────────────────────────────────────────────────────────────
+   구매 폼 (규칙 P-1 ~ P-6)
+
+   여기만 Errors<T>를 쓰지 않는다.
+
+   PurchaseFormValues.items는 배열이라 Errors<T>로는 `items: string`
+   하나밖에 못 만든다. 그러면 상품 3개를 동시에 입력하는 폼에서
+   "구매 개수는 1개 이상이어야 합니다"만 뜨고 **어느 행인지 알 수 없다.**
+
+   그래서 주문 공통 오류 + candidateId를 키로 하는 항목별 오류, 두 층을 쓴다.
+   다른 폼은 배열 필드가 없어서 Errors<T>로 충분하다.
+   ──────────────────────────────────────────────────────────── */
+
+export interface PurchaseItemErrors {
+  unitPrice?: string;
+  quantity?: string;
+  amountValue?: string;
+  amountUnit?: string;
+}
+
+export interface PurchaseFormErrors {
+  purchasedAt?: string;
+  totalPaid?: string;
+  seller?: string;
+  reason?: string;
+  /** 선택된 항목이 0개일 때의 폼 수준 오류 */
+  items?: string;
+  /** key = candidateId. 선택된 항목만 들어간다. */
+  itemErrors: Record<string, PurchaseItemErrors>;
+}
+
+const PURCHASE_COMMON_KEYS = [
+  'items',
+  'purchasedAt',
+  'totalPaid',
+  'seller',
+  'reason',
+] as const satisfies readonly (keyof PurchaseFormErrors)[];
+
+/**
+ * hasError()를 그대로 쓰면 **항상 true**가 된다.
+ *
+ * hasError는 Object.values(e).some(v => v !== undefined)인데
+ * itemErrors는 오류가 하나도 없어도 {} 라서 undefined가 아니다.
+ * 그래서 구매 폼은 반드시 이 함수를 쓴다.
+ */
+export function hasPurchaseError(e: PurchaseFormErrors): boolean {
+  if (PURCHASE_COMMON_KEYS.some((key) => e[key] !== undefined)) return true;
+
+  return Object.values(e.itemErrors).some((row) =>
+    Object.values(row).some((message) => message !== undefined),
+  );
+}
+
+export function validatePurchaseForm(
+  v: PurchaseFormValues,
+): PurchaseFormErrors {
+  const e: PurchaseFormErrors = { itemErrors: {} };
+
+  const selected = v.items.filter((item) => item.selected);
+  if (selected.length < 1) {
+    e.items = '구매한 상품을 1개 이상 선택해 주세요.';
+  }
+
+  if (!isValidDateOnly(v.purchasedAt)) {
+    e.purchasedAt = '구매일을 YYYY-MM-DD 형식으로 입력해 주세요.';
+  }
+
+  if (!isPositiveInt(v.totalPaid, 0)) {
+    e.totalPaid = '최종 결제금액은 0원 이상의 정수로 입력해 주세요.';
+  }
+
+  if (v.seller.trim().length > 40) {
+    e.seller = '구매처는 40자 이내로 입력해 주세요.';
+  }
+
+  const reason = v.reason.trim();
+  if (reason.length < 1) {
+    e.reason = '선택한 이유나 메모를 입력해 주세요.';
+  } else if (reason.length > 300) {
+    e.reason = '선택한 이유는 300자 이내로 입력해 주세요.';
+  }
+
+  // 체크되지 않은 행은 검사하지 않는다.
+  // 입력값은 배열에 남아 있지만 저장되지 않으므로 막을 이유가 없다.
+  // 체크를 껐다 켜면 입력이 그대로 살아 있는 것도 이 덕분이다.
+  for (const item of selected) {
+    const row: PurchaseItemErrors = {};
+
+    if (!isPositiveInt(item.unitPrice, 0)) {
+      row.unitPrice = '단가는 0원 이상의 정수로 입력해 주세요.';
+    }
+
+    if (!isPositiveInt(item.quantity, 1)) {
+      row.quantity = '구매 개수는 1개 이상의 정수로 입력해 주세요.';
+    }
+
+    // 구성량은 선택이지만, 넣었으면 단위가 따라와야 한다 (규칙 C-3)
+    const amount = item.amountValue.trim();
+    if (amount !== '') {
+      const n = Number(amount);
+      if (!Number.isFinite(n) || n <= 0) {
+        row.amountValue = '구성량은 0보다 커야 합니다.';
+      }
+      if (item.amountUnit === '') {
+        row.amountUnit = '단위를 선택해 주세요.';
+      }
+    }
+
+    if (Object.keys(row).length > 0) {
+      e.itemErrors[item.candidateId] = row;
+    }
+  }
+
+  return e;
+}
+
+/**
+ * 제출 실패 시 포커스를 옮길 자리.
+ *
+ * 고민·후보 폼은 필드 이름 하나면 충분했는데 구매 폼은 그렇지 않다.
+ * "2번째 상품의 수량"을 가리키려면 candidateId까지 있어야 한다.
+ * 그래서 문자열 대신 판별 유니온을 돌려준다.
+ *
+ * 순서는 **화면에 보이는 순서**다. 상품 선택이 맨 위, 그다음 상품 행들,
+ * 그 아래가 주문 공통 항목이다.
+ */
+export type PurchaseErrorTarget =
+  | { kind: 'common'; field: (typeof PURCHASE_COMMON_KEYS)[number] }
+  | { kind: 'item'; candidateId: string; field: keyof PurchaseItemErrors };
+
+const PURCHASE_ITEM_FIELD_ORDER = [
+  'unitPrice',
+  'quantity',
+  'amountValue',
+  'amountUnit',
+] as const satisfies readonly (keyof PurchaseItemErrors)[];
+
+export function firstPurchaseErrorField(
+  v: PurchaseFormValues,
+  e: PurchaseFormErrors,
+): PurchaseErrorTarget | undefined {
+  if (e.items !== undefined) return { kind: 'common', field: 'items' };
+
+  // 폼의 행 순서를 그대로 따라간다. itemErrors를 순회하면
+  // 객체 키 순서에 기대게 되고, 화면 순서와 어긋날 수 있다.
+  for (const item of v.items) {
+    const row = e.itemErrors[item.candidateId];
+    if (!row) continue;
+
+    const field = PURCHASE_ITEM_FIELD_ORDER.find(
+      (key) => row[key] !== undefined,
+    );
+    if (field) return { kind: 'item', candidateId: item.candidateId, field };
+  }
+
+  const field = PURCHASE_COMMON_KEYS.find((key) => e[key] !== undefined);
+  return field ? { kind: 'common', field } : undefined;
 }
 
 /* ────────────────────────────────────────────────────────────
