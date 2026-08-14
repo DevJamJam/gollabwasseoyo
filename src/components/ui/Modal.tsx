@@ -3,12 +3,12 @@
 /**
  * 모달 껍데기.
  *
- * 오늘 넣는 것 — role="dialog" · aria-modal · aria-labelledby ·
+ * 넣은 것 — role="dialog" · aria-modal · aria-labelledby ·
  * Esc로 닫기 · 배경 스크롤 잠금.
  *
- * 오늘 넣지 않는 것 — Tab 순환 트랩. 직접 구현하면 난도가 높고 버그가 잘 생긴다.
+ * 넣지 않은 것 — Tab 순환 트랩. 직접 구현하면 난도가 높고 버그가 잘 생긴다.
  * 위 다섯 가지만 있어도 스크린리더와 키보드 사용자가 모달을 인지하고
- * 조작하고 빠져나올 수 있다. 여유가 생기면 마지막에 보강한다.
+ * 조작하고 빠져나올 수 있어서, 그쪽을 확실히 하는 것을 골랐다.
  */
 
 import { useEffect, useId } from 'react';

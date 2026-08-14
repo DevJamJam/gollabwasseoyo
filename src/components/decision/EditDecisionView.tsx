@@ -14,10 +14,9 @@ import { useDecisions } from '@/store/useDecisions';
 /**
  * 고민 수정.
  *
- * 상세 화면과 **똑같은 3분기 구조**를 쓴다.
+ * 상세 화면과 똑같은 3분기 구조를 쓴다.
  * ready 확인 → getById → 로딩/없음/정상. 두 번 반복하면서 익히는 패턴이다.
  *
- * ── cloneCandidateForEdit를 거치는 이유 ──
  * decision.candidates를 그대로 폼 초기값으로 주면, 폼 안에서 후보를
  * 고치는 순간 Provider가 들고 있는 원본까지 같이 바뀐다.
  * 얕은 복사(`{...c}`)로는 부족하다 — pros·cons·amount가 여전히 같은 객체다.

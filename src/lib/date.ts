@@ -31,7 +31,7 @@ export function isValidDateOnly(value: unknown): value is string {
 }
 
 /**
- * 미래 날짜인가. **안내 문구 표시용이며 검증에 쓰지 않는다** (설계서 10.3).
+ * 미래 날짜인가. 안내 문구 표시용이며 검증에 쓰지 않는다.
  * 예약 구매를 막을 이유가 없으므로 오류가 아니라 정보로 보여준다.
  *
  * today를 인자로 받는 이유: 함수 안에서 new Date()를 부르면 순수 함수가 아니게 되어

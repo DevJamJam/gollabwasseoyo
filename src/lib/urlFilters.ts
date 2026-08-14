@@ -33,7 +33,7 @@ export function isDecisionStatus(v: string | undefined): v is DecisionStatus {
  * 주소창의 원시 문자열을 검증된 Filters로 바꾼다.
  *
  * 핵심은 rawCategory와 category를 이름으로 구분한 것이다.
- * 태그를 유지할지는 반드시 **검증을 통과한** category로 판단해야 한다.
+ * 태그를 유지할지는 반드시 검증을 통과한 category로 판단해야 한다.
  * 원시 문자열로 판단하면 /?category=wrong&tag=원두 에서 카테고리는 버려지는데
  * 태그만 살아남아, 어느 카테고리에도 속하지 않은 태그 필터가 걸린다.
  */

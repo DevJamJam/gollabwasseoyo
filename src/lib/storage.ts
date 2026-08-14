@@ -166,7 +166,7 @@ function isOrderShape(value: unknown): value is Order {
 function isDecisionShape(value: unknown): value is Decision {
   // isRecord를 먼저 통과시켜 value를 좁혀둔다.
   //
-  // 설계서처럼 isRecord를 아래 긴 && 식 안에 넣어도 컴파일은 된다.
+  // isRecord를 아래 긴 && 식 안에 넣어도 컴파일은 된다.
   // TypeScript 4.4+가 '별칭 조건 흐름 분석'을 하기 때문이다 —
   // 좁히기 조건을 const에 담아두면 나중에 그 const를 검사할 때 좁힘이 유지된다.
   //

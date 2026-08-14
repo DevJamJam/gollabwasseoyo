@@ -28,7 +28,7 @@ import type {
  * setReview·removeReview·updateDecision로 5개다. 저장하면 그 5곳 모두에서
  * status를 함께 갱신해야 하고, 한 곳만 빠져도 데이터가 거짓말을 한다.
  *
- * 특히 removeReview(평가 삭제)는 '평가 완료 → 구매 완료'로 **되돌아가는** 전환인데,
+ * 특히 removeReview(평가 삭제)는 '평가 완료 → 구매 완료'로 되돌아가는 전환인데,
  * 파생이면 review = null 한 줄로 자동 성립한다. 이 함수는 손댈 필요가 없다.
  */
 export function getStatus(d: Decision): DecisionStatus {
@@ -135,7 +135,7 @@ export function getTotalAmount(item: PurchasedItem): Amount | null {
 /**
  * 단가 × 개수의 합.
  *
- * 이 값과 최종 결제금액이 달라도 **오류가 아니다.** 쿠폰·배송비·포인트가
+ * 이 값과 최종 결제금액이 달라도 오류가 아니다. 쿠폰·배송비·포인트가
  * 붙는 게 정상이라, 둘이 같아야 한다고 강제하면 실제 영수증을 못 적는다.
  * 대신 차액을 보여주기만 한다 — 오타로 0이 하나 빠졌을 때 눈에 띄게 하려고.
  *

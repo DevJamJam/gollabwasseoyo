@@ -11,7 +11,6 @@ import { fieldErrorId, fieldId, flexInputClass, inputClass } from './Field';
  * 둘은 항상 붙어 다닌다. 값을 입력했으면 단위가 필수고(규칙 C-3),
  * 값이 없으면 단위도 저장하지 않는다. 따로 두면 그 관계가 화면에서 사라진다.
  *
- * ── inputMode를 decimal로 둔 이유 ──
  * 원두는 1.5kg처럼 소수가 정상이다. numeric으로 두면 모바일 키패드에
  * 소수점이 안 나와서 아예 입력할 수가 없다.
  * 금액과 개수는 정수라서 그쪽은 numeric을 쓴다.

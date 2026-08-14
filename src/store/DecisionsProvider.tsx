@@ -90,7 +90,6 @@ export function DecisionsProvider({
    * 클라이언트의 첫 렌더(데이터 있는 목록)가 달라져 hydration 오류가 난다.
    * useEffect는 브라우저에서만, 그것도 첫 렌더가 끝난 뒤에 실행된다.
    *
-   * ── react-hooks/set-state-in-effect를 끈 이유 ──
    * 이 규칙은 "effect 안에서 setState를 부르면 렌더가 연쇄된다"고 경고한다.
    * 일반적으로는 맞다. 그런데 여기서 일어나는 추가 렌더는 정확히 한 번이고,
    * 그 한 번이 이 설계가 의도한 동작이다 — 첫 프레임은 스켈레톤,
