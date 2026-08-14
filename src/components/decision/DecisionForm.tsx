@@ -209,6 +209,7 @@ export function DecisionForm(props: DecisionFormProps) {
         setCandidateError(undefined);
       }}
       lockedCandidateIds={lockedCandidateIds}
+      currentDecisionId={props.mode === 'edit' ? props.decisionId : undefined}
       error={candidateError}
     />
   );

@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { CandidateFormModal } from '@/components/decision/CandidateFormModal';
 import { CandidateSummaryCard } from '@/components/decision/CandidateSummaryCard';
+import { PastCandidateModal } from '@/components/decision/PastCandidateModal';
 import { Button } from '@/components/ui/Button';
 import { canDeleteCandidate } from '@/lib/derive';
 import { newId } from '@/lib/id';
@@ -25,6 +26,8 @@ interface Props {
   onChange: (next: Candidate[]) => void;
   /** 구매되어 지울 수 없는 후보 id. 등록 화면에서는 항상 빈 배열. */
   lockedCandidateIds: string[];
+  /** 지금 수정 중인 고민. 불러오기 목록에서 자기 후보를 빼는 데 쓴다. */
+  currentDecisionId?: string;
   error?: string;
 }
 
@@ -32,6 +35,7 @@ export function CandidateSection({
   candidates,
   onChange,
   lockedCandidateIds,
+  currentDecisionId,
   error,
 }: Props) {
   /** null이면 닫힘, 'new'면 추가, 객체면 수정 */
@@ -51,6 +55,9 @@ export function CandidateSection({
    * 열린 횟수를 세면 언제나 달라진다.
    */
   const [openCount, setOpenCount] = useState(0);
+
+  /** 과거 후보 불러오기 모달 */
+  const [importing, setImporting] = useState(false);
 
   function openNew(): void {
     setEditing('new');
@@ -80,6 +87,18 @@ export function CandidateSection({
     onChange(candidates.filter((c) => c.id !== id));
   }
 
+  /**
+   * 불러온 후보를 목록 뒤에 붙인다.
+   *
+   * 모달이 남은 자리를 이미 알고 그만큼만 고르게 하지만, 여기서 한 번 더
+   * 자른다. 개수 규칙은 이 컴포넌트의 책임이고, 규칙을 아는 곳이
+   * 하나뿐이어야 나중에 어긋나지 않는다.
+   */
+  function importCandidates(imported: Candidate[]): void {
+    onChange([...candidates, ...imported].slice(0, MAX));
+    setImporting(false);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between">
@@ -102,9 +121,12 @@ export function CandidateSection({
           <p className="mt-1.5 text-sm text-slate-500">
             비교할 상품을 추가해 고민을 기록해 보세요.
           </p>
-          <div className="mt-5">
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
             <Button variant="primary" onClick={openNew}>
               + 새 후보 추가
+            </Button>
+            <Button onClick={() => setImporting(true)}>
+              과거 후보 불러오기
             </Button>
           </div>
         </div>
@@ -137,9 +159,14 @@ export function CandidateSection({
           </ul>
 
           <div>
-            <Button onClick={openNew} disabled={full}>
-              + 새 후보 추가
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={openNew} disabled={full}>
+                + 새 후보 추가
+              </Button>
+              <Button onClick={() => setImporting(true)} disabled={full}>
+                과거 후보 불러오기
+              </Button>
+            </div>
             {full && (
               <p className="mt-2 text-xs text-slate-500">
                 후보는 최대 {MAX}개까지 등록할 수 있습니다.
@@ -161,6 +188,14 @@ export function CandidateSection({
           newId={newId}
         />
       )}
+
+      <PastCandidateModal
+        open={importing}
+        onClose={() => setImporting(false)}
+        onImport={importCandidates}
+        currentDecisionId={currentDecisionId}
+        remaining={MAX - candidates.length}
+      />
     </div>
   );
 }

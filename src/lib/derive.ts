@@ -14,6 +14,7 @@ import type {
   Filters,
   PurchaseFormValues,
   PurchasedItem,
+  Rating,
 } from './types';
 
 /* ────────────────────────────────────────────────────────────
@@ -173,6 +174,66 @@ export function getFormSubtotal(v: PurchaseFormValues): number | null {
   }
 
   return sum;
+}
+
+/* ────────────────────────────────────────────────────────────
+   과거 후보 (규칙 L-1)
+   ──────────────────────────────────────────────────────────── */
+
+/**
+ * 다른 고민에 등록해둔 후보 하나와, 그때 어떻게 됐는지.
+ *
+ * 후보 자체에는 '샀는지'가 없다. 그건 주문 쪽에 있다.
+ * 불러오기 목록에서는 그 둘을 나란히 봐야 고를 수 있으므로
+ * 여기서 한 번 합쳐둔다.
+ */
+export interface PastCandidate {
+  candidate: Candidate;
+  decisionId: string;
+  decisionTitle: string;
+  /** 그 고민에서 실제로 샀는가 */
+  purchased: boolean;
+  /** 평가를 썼는가. 사용 경험을 바꿀 유일한 근거다 (규칙 L-2) */
+  reviewed: boolean;
+  rating?: Rating;
+  oneLine?: string;
+}
+
+/**
+ * 불러올 수 있는 과거 후보 목록.
+ *
+ * 지금 편집 중인 고민은 제외한다. 자기 후보를 자기한테 다시 불러오는 것은
+ * 복제일 뿐 '과거를 참고한다'는 이 기능의 뜻이 아니다.
+ *
+ * 정렬하지 않고 받은 순서를 유지한다. decisions는 이미 최신 고민이 앞에
+ * 오도록 관리되고 있어서(createDecision이 앞에 붙인다), 여기서 다시 정렬하면
+ * 그 순서를 두 곳에서 정하게 된다.
+ */
+export function getPastCandidates(
+  decisions: readonly Decision[],
+  excludeDecisionId?: string,
+): PastCandidate[] {
+  const result: PastCandidate[] = [];
+
+  for (const d of decisions) {
+    if (d.id === excludeDecisionId) continue;
+
+    for (const c of d.candidates) {
+      const item = d.order?.items.find((it) => it.candidateId === c.id);
+
+      result.push({
+        candidate: c,
+        decisionId: d.id,
+        decisionTitle: d.title,
+        purchased: item !== undefined,
+        reviewed: item?.review != null,
+        rating: item?.review?.rating,
+        oneLine: item?.review?.oneLine,
+      });
+    }
+  }
+
+  return result;
 }
 
 /* ────────────────────────────────────────────────────────────
